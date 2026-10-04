@@ -1,0 +1,41 @@
+# Dependências
+node_modules/
+
+# Build do frontend
+dist/
+dist-ssr/
+*.local
+
+# Capacitor / Android
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/local.properties
+android/.idea/
+android/captures/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs / cobertura
+logs/
+*.log
+npm-debug.log*
+coverage/
+
+# IDE e ferramentas
+.freebuff/
+.agents/
+

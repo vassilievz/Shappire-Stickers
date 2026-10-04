@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shappire Stickers</string>
+    <string name="title_activity_main">Shappire Stickers</string>
+    <string name="package_name">com.shappire.stickers</string>
+    <string name="custom_url_scheme">com.shappire.stickers</string>
+</resources>

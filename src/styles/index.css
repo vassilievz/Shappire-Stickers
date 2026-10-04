@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-app: var(--sh-app);
+  --color-surface: var(--sh-surface);
+  --color-surface-2: var(--sh-surface-2);
+  --color-surface-3: var(--sh-surface-3);
+  --color-line: var(--sh-line);
+  --color-ink: var(--sh-ink);
+  --color-ink-soft: var(--sh-ink-soft);
+  --color-ink-muted: var(--sh-ink-muted);
+  --color-accent: var(--sh-accent);
+  --color-on-accent: var(--sh-on-accent);
+  --color-focus: var(--sh-focus);
+  --color-danger: var(--sh-danger);
+  --color-success: var(--sh-success);
+  --color-warning: var(--sh-warning);
+
+  --font-sans:
+    'Inter', 'Segoe UI', system-ui, -apple-system, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root,
+[data-theme='dark'] {
+  --sh-app: #08090b;
+  --sh-surface: #111215;
+  --sh-surface-2: #16181d;
+  --sh-surface-3: #1f2229;
+  --sh-line: rgba(255, 255, 255, 0.08);
+  --sh-ink: #f5f6f8;
+  --sh-ink-soft: #b8bdc7;
+  --sh-ink-muted: #757b86;
+  --sh-accent: #f5f6f8;
+  --sh-on-accent: #08090b;
+  --sh-focus: #ffffff;
+  --sh-danger: #f87171;
+  --sh-success: #4ade80;
+  --sh-warning: #fbbf24;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --sh-app: #f5f6f8;
+  --sh-surface: #ffffff;
+  --sh-surface-2: #ededf1;
+  --sh-surface-3: #e2e4e9;
+  --sh-line: rgba(10, 11, 13, 0.1);
+  --sh-ink: #0d0f12;
+  --sh-ink-soft: #424750;
+  --sh-ink-muted: #717782;
+  --sh-accent: #0d0f12;
+  --sh-on-accent: #ffffff;
+  --sh-focus: #0d0f12;
+  --sh-danger: #dc2626;
+  --sh-success: #16a34a;
+  --sh-warning: #d97706;
+  color-scheme: light;
+}
+
+html {
+  height: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  background-color: var(--sh-app);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+  background-color: var(--sh-app);
+  color: var(--sh-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--sh-focus);
+  outline-offset: 2px;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+}
+
+[data-theme='light'] .checkerboard {
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.06) 75%);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.26s var(--ease-soft) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s var(--ease-soft) both;
+}
+
+.animate-toast-in {
+  animation: toast-in 0.24s var(--ease-soft) both;
+}
+
+.animate-spin {
+  animation: spin 0.75s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
