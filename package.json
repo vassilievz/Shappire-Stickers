@@ -5,7 +5,12 @@
   "description": "Shappire Stickers - criador local de figurinhas (sticker packs) para WhatsApp no Android",
   "type": "module",
   "license": "MIT",
-  "author": "Shappire Stickers",
+  "author": "Gabriel (vassiliev)",
+  "homepage": "https://github.com/vassilievz/Shappire-Stickers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vassilievz/Shappire-Stickers.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

@@ -8,7 +8,7 @@ export const APP_INFO = {
     'organize pacotes e envie para o WhatsApp. Tudo funciona offline, sem contas e sem servidores.',
   version: '0.1.0',
   
-  repositoryUrl: 'https://github.com/shappire/shappire-stickers',
+  repositoryUrl: 'https://github.com/vassilievz/Shappire-Stickers',
   licenseName: 'MIT',
   licenseUrl: 'https://opensource.org/licenses/MIT',
   privacySummary:
