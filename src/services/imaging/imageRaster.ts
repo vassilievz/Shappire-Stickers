@@ -1,5 +1,5 @@
 import { EDITOR_CONFIG } from '@/config/editor';
-import type { MaskStroke, StrokeStyle } from '@/domain/editor/elements';
+import type { ImageFilters, MaskStroke, StrokeStyle } from '@/domain/editor/elements';
 import { hasMask } from '@/domain/editor/mask';
 import { type CanvasFactory, defaultCanvasFactory, getContext2D } from './canvas';
 
@@ -10,6 +10,31 @@ export interface ImageRasterInput {
   height: number;
   maskStrokes: readonly MaskStroke[];
   stroke: StrokeStyle;
+  filters?: ImageFilters;
+}
+
+export function buildCanvasFilterString(filters?: Partial<ImageFilters>): string {
+  if (!filters) return 'none';
+  const parts: string[] = [];
+  if (filters.brightness !== undefined && filters.brightness !== 0) {
+    parts.push(`brightness(${100 + filters.brightness}%)`);
+  }
+  if (filters.contrast !== undefined && filters.contrast !== 0) {
+    parts.push(`contrast(${100 + filters.contrast}%)`);
+  }
+  if (filters.saturation !== undefined && filters.saturation !== 0) {
+    parts.push(`saturate(${100 + filters.saturation}%)`);
+  }
+  if (filters.grayscale) {
+    parts.push('grayscale(100%)');
+  }
+  if (filters.sepia) {
+    parts.push('sepia(100%)');
+  }
+  if (filters.invert) {
+    parts.push('invert(100%)');
+  }
+  return parts.length > 0 ? parts.join(' ') : 'none';
 }
 
 export interface RasterizeImageOptions {
@@ -32,7 +57,15 @@ export function rasterizeImage(
   ctx.clearRect(0, 0, pixelWidth, pixelHeight);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
+
+  const filterString = buildCanvasFilterString(input.filters);
+  if (filterString !== 'none') {
+    ctx.filter = filterString;
+  }
   ctx.drawImage(input.source, 0, 0, pixelWidth, pixelHeight);
+  if (filterString !== 'none') {
+    ctx.filter = 'none';
+  }
 
   if (hasMask(input.maskStrokes)) {
     applyMaskPath(ctx, input.maskStrokes, pixelWidth, pixelHeight, scale);

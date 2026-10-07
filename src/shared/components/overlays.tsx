@@ -66,7 +66,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="-mr-1.5 -mt-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
+            className="-mr-1.5 -mt-1 flex size-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 touch-manipulation"
           >
             <X className="size-4" aria-hidden />
           </button>
@@ -162,7 +162,7 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
         role="dialog"
         aria-modal="true"
         aria-label={title ?? 'Painel'}
-        className="relative max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-t-[22px] border-t border-line bg-surface pb-[calc(env(safe-area-inset-bottom,0px)+24px)] shadow-[0_-12px_36px_rgba(0,0,0,0.5)] animate-fade-in-up"
+        className="relative max-h-[88dvh] w-full max-w-[720px] mx-auto overflow-y-auto overscroll-contain rounded-t-[22px] border-t border-line bg-surface pb-[calc(env(safe-area-inset-bottom,0px)+24px)] shadow-[0_-12px_36px_rgba(0,0,0,0.5)] animate-fade-in-up"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur px-5 pb-3 pt-3">
@@ -174,7 +174,7 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
                 type="button"
                 onClick={onClose}
                 aria-label="Fechar"
-                className="flex size-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95"
+                className="flex size-10 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95 touch-manipulation"
               >
                 <X className="size-4" aria-hidden />
               </button>
@@ -266,7 +266,7 @@ export function ToastHost() {
             type="button"
             onClick={() => dismiss(toast.id)}
             aria-label="Dispensar aviso"
-            className="-mr-1 -mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-current opacity-70 hover:opacity-100 active:scale-95"
+            className="-mr-1 -mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-current opacity-70 hover:opacity-100 active:scale-95 touch-manipulation relative after:absolute after:-inset-1 after:content-['']"
           >
             <X className="size-3.5" aria-hidden />
           </button>

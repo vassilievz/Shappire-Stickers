@@ -5,6 +5,7 @@ import {
   Hand,
   ImagePlus,
   Layers,
+  MessageSquare,
   MousePointer2,
   Paintbrush,
   RotateCcw,
@@ -46,6 +47,7 @@ export interface EditorToolbarProps {
   onMaskBrushSizeChange: (size: number) => void;
   onImportImage: () => void;
   onOpenCropper?: () => void;
+  onOpenTemplates?: () => void;
   onOpenProperties: () => void;
   onOpenLayers: () => void;
   onClearDrawing: () => void;
@@ -68,6 +70,7 @@ export function EditorToolbar({
   onMaskBrushSizeChange,
   onImportImage,
   onOpenCropper,
+  onOpenTemplates,
   onOpenProperties,
   onOpenLayers,
   onClearDrawing,
@@ -81,7 +84,7 @@ export function EditorToolbar({
 
   return (
     <div className="safe-bottom border-t border-line bg-surface/95 backdrop-blur">
-      <div className="mx-auto w-full max-w-[640px] px-2 pt-1.5">
+      <div className="mx-auto w-full max-w-[768px] px-2 pt-1.5">
         <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
           {TOOL_KEYS.map((toolId) => {
             const Icon = TOOL_ICONS[toolId];
@@ -96,7 +99,7 @@ export function EditorToolbar({
                 title={label}
                 onClick={() => onSelectTool(toolId)}
                 className={cx(
-                  'flex min-w-[52px] flex-1 flex-col items-center gap-1 rounded-[12px] px-1 py-2 transition-all duration-150',
+                  'flex min-w-[52px] flex-1 flex-col items-center gap-1 rounded-[12px] px-1 py-2 transition-all duration-150 touch-manipulation',
                   active
                     ? 'bg-surface-3 text-ink shadow-[0_2px_8px_rgba(255,255,255,0.06)] ring-1 ring-white/15'
                     : 'text-ink-muted hover:text-ink-soft hover:bg-surface-2/60',
@@ -121,7 +124,7 @@ export function EditorToolbar({
                     aria-pressed={brushColor.toUpperCase() === color.toUpperCase()}
                     onClick={() => onBrushColorChange(color)}
                     className={cx(
-                      'size-7 shrink-0 rounded-full border transition-transform active:scale-95',
+                      'size-7 shrink-0 rounded-full border transition-transform active:scale-95 touch-manipulation relative after:absolute after:-inset-1.5 after:content-[""]',
                       brushColor.toUpperCase() === color.toUpperCase()
                         ? 'border-focus ring-2 ring-focus/40'
                         : 'border-line',
@@ -161,7 +164,7 @@ export function EditorToolbar({
           ) : null}
 
           {activeTool === 'draw' || activeTool === 'erase' ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
               <Button
                 variant="secondary"
                 size="sm"
@@ -184,7 +187,7 @@ export function EditorToolbar({
           ) : null}
 
           {activeTool === 'select' ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
               <Button
                 variant="secondary"
                 size="sm"
@@ -193,6 +196,16 @@ export function EditorToolbar({
               >
                 {t('editor.toolbar.image')}
               </Button>
+              {onOpenTemplates ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onOpenTemplates}
+                  icon={<MessageSquare className="size-4" aria-hidden />}
+                >
+                  {t('editor.tools.templates')}
+                </Button>
+              ) : null}
               {hasImageSelection && onOpenCropper ? (
                 <Button
                   variant="secondary"

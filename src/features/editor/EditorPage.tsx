@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Boxes, ImagePlus, Layers, Minus, Plus, Type } from 'lucide-react';
+import { Boxes, ImagePlus, Layers, Minus, Plus, ShieldCheck, Type } from 'lucide-react';
 import { EDITOR_CONFIG } from '@/config/editor';
 import { Button, IconButton } from '@/shared/components/primitives';
 import { BottomSheet, Modal } from '@/shared/components/overlays';
@@ -12,7 +12,9 @@ import { EditorLayersPanel } from './components/EditorLayersPanel';
 import { EditorPropertiesPanel } from './components/EditorPropertiesPanel';
 import { EditorExportSheet } from './components/EditorExportSheet';
 import { ImageCropperModal } from './components/ImageCropperModal';
+import { StickerTemplatesModal } from './components/StickerTemplatesModal';
 import {
+  addImageFromDataUrlToCanvas,
   applyCroppedImageToElement,
   importImagesToCanvas,
   openProjectById,
@@ -45,6 +47,8 @@ export function EditorPage() {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [cropperTargetElementId, setCropperTargetElementId] = useState<string | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [showSafeArea, setShowSafeArea] = useState(false);
 
   const history = useEditorStore((state) => state.history);
   const selectedIds = useEditorStore((state) => state.selectedIds);
@@ -127,8 +131,13 @@ export function EditorPage() {
     if (store.projectId && store.dirty) {
       await saveCurrentProject({ silent: true });
     }
-    void navigate('/');
-  }, [navigate]);
+    const packParam = new URLSearchParams(location.search).get('pack') || store.packId;
+    if (packParam) {
+      void navigate(`/pacotes/${packParam}`);
+    } else {
+      void navigate('/');
+    }
+  }, [navigate, location.search]);
 
   const handleImport = useCallback(async () => {
     const added = await importImagesToCanvas(4);
@@ -207,6 +216,18 @@ export function EditorPage() {
     },
     [cropperTargetElementId, t],
   );
+  const handleAddTemplate = useCallback(
+    async (dataUrl: string, name: string) => {
+      try {
+        await addImageFromDataUrlToCanvas(dataUrl, name);
+        setRasterNonce((value) => value + 1);
+        showToast(t('editor.cropper.cropApplied'), 'success');
+      } catch {
+        showToast(t('errors.IMAGE_DECODE_FAILED'), 'error');
+      }
+    },
+    [t],
+  );
 
   const isEmpty = elements.length === 0;
 
@@ -241,6 +262,14 @@ export function EditorPage() {
         </div>
 
         <div className="flex items-center gap-1">
+          <IconButton
+            label={t('editor.toolbar.safeArea')}
+            size="sm"
+            active={showSafeArea}
+            onClick={() => setShowSafeArea((prev) => !prev)}
+          >
+            <ShieldCheck className="size-4" aria-hidden />
+          </IconButton>
           <Button
             variant="quiet"
             size="sm"
@@ -266,7 +295,7 @@ export function EditorPage() {
             {t('editor.preparing')}
           </div>
         ) : (
-          <EditorCanvas rasterNonce={rasterNonce} />
+          <EditorCanvas rasterNonce={rasterNonce} showSafeArea={showSafeArea} />
         )}
 
         {!loading && isEmpty && activeTool !== 'text' ? (
@@ -311,6 +340,7 @@ export function EditorPage() {
         onBrushColorChange={setBrushColor}
         onMaskBrushSizeChange={setMaskBrushSize}
         onImportImage={() => void handleImport()}
+        onOpenTemplates={() => setTemplatesOpen(true)}
         onOpenCropper={() => {
           if (selectedElement?.kind === 'image') {
             void handleOpenCropper(selectedElement);
@@ -341,6 +371,12 @@ export function EditorPage() {
       </BottomSheet>
 
       <EditorExportSheet open={exportOpen} onClose={() => setExportOpen(false)} />
+
+      <StickerTemplatesModal
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onSelect={(dataUrl, name) => void handleAddTemplate(dataUrl, name)}
+      />
 
       <ImageCropperModal
         open={cropperOpen}

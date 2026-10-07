@@ -161,9 +161,36 @@ describe('validateStickerPack', () => {
   });
 
   it('valida pacotes animados com suporte a figurinhas animadas', () => {
-    const result = validateStickerPack(pack({ stickerType: 'animated' }));
+    const animatedStickers = [
+      sticker({ id: 'stk_1', fileName: 'sticker_01.webp', isAnimated: true }),
+      sticker({ id: 'stk_2', fileName: 'sticker_02.webp', isAnimated: true }),
+      sticker({ id: 'stk_3', fileName: 'sticker_03.webp', isAnimated: true }),
+    ];
+    const result = validateStickerPack(pack({ stickerType: 'animated', stickers: animatedStickers }));
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+
+  it('recusa pacote com mistura de figurinhas estáticas e animadas', () => {
+    const mixedStickers = [
+      sticker({ id: 'stk_1', fileName: 'sticker_01.webp', isAnimated: false }),
+      sticker({ id: 'stk_2', fileName: 'sticker_02.webp', isAnimated: true }),
+      sticker({ id: 'stk_3', fileName: 'sticker_03.webp', isAnimated: false }),
+    ];
+    const result = validateStickerPack(pack({ stickers: mixedStickers }));
+    expect(result.valid).toBe(false);
+    expect(result.errors.map((e) => e.code)).toContain('PACK_MIXED_TYPES');
+  });
+
+  it('recusa pacote estático com figurinhas animadas', () => {
+    const allAnimated = [
+      sticker({ id: 'stk_1', fileName: 'sticker_01.webp', isAnimated: true }),
+      sticker({ id: 'stk_2', fileName: 'sticker_02.webp', isAnimated: true }),
+      sticker({ id: 'stk_3', fileName: 'sticker_03.webp', isAnimated: true }),
+    ];
+    const result = validateStickerPack(pack({ stickerType: 'static', stickers: allAnimated }));
+    expect(result.valid).toBe(false);
+    expect(result.errors.map((e) => e.code)).toContain('PACK_TYPE_MISMATCH');
   });
 
   it('usa o tamanho real do arquivo quando informado', () => {

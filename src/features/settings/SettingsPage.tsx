@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
+  Check,
   CheckCircle2,
+  ChevronDown,
+  Download,
   ExternalLink,
   HardDrive,
   Info,
+  AtSign,
   Palette,
   RefreshCw,
   Shield,
@@ -11,9 +15,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Badge, Button, Divider, SectionTitle } from '@/shared/components/primitives';
-import { SegmentedControl, SwitchField } from '@/shared/components/inputs';
-import { ConfirmDialog } from '@/shared/components/overlays';
+import { SegmentedControl, SwitchField, TextInput } from '@/shared/components/inputs';
+import { BottomSheet, ConfirmDialog, Modal } from '@/shared/components/overlays';
+import { cx } from '@/shared/utils/cx';
+import { BlurFade } from '@/shared/components/motion';
+import { hapticSelection } from '@/services/native/haptics';
 import { APP_INFO } from '@/config/app';
+import { INSTAGRAM_HANDLE, INSTAGRAM_LABEL, INSTAGRAM_PROFILE_URL } from '@/config/attribution';
+import { openExternalLink } from '@/services/native/externalLinks';
 import { formatBytes } from '@/shared/utils/format';
 import {
   cleanAbandonedFiles,
@@ -27,6 +36,13 @@ import { showToast } from '@/state/toastStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import type { LanguagePreference, ThemePreference } from '@/services/storage/settingsRepository';
 import { useTranslation } from '@/i18n';
+import {
+  applyOtaUpdate,
+  checkOtaUpdate,
+  downloadOtaUpdate,
+  getOtaStatus,
+  type AppUpdateStatus,
+} from '@/services/ota/otaService';
 
 const CREDITS: { name: string; license: string; url: string }[] = [
   { name: 'React', license: 'MIT', url: 'https://react.dev' },
@@ -54,16 +70,106 @@ export function SettingsPage() {
   const [cleanupKind, setCleanupKind] = useState<CleanupKind | null>(null);
   const [cleaning, setCleaning] = useState(false);
 
+  const [otaStatus, setOtaStatus] = useState<AppUpdateStatus | null>(null);
+  const [otaCheckState, setOtaCheckState] = useState<
+    'idle' | 'checking' | 'up_to_date' | 'update_available' | 'downloading' | 'ready' | 'error'
+  >('idle');
+  const [availableOtaVersion, setAvailableOtaVersion] = useState<string | null>(null);
+  const [otaErrorMessage, setOtaErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getOtaStatus().then((status) => {
+      setOtaStatus(status);
+      if (status.hasStagedUpdate && status.stagedVersion) {
+        setOtaCheckState('ready');
+        setAvailableOtaVersion(status.stagedVersion);
+      }
+    });
+  }, []);
+
+  const handleCheckUpdates = async () => {
+    setOtaCheckState('checking');
+    setOtaErrorMessage(null);
+    try {
+      const result = await checkOtaUpdate();
+      if (result.kind === 'up_to_date') {
+        setOtaCheckState('up_to_date');
+        showToast(t('settings.upToDate'), 'success');
+      } else if (result.kind === 'update_available') {
+        setOtaCheckState('update_available');
+        setAvailableOtaVersion(result.version);
+        showToast(`${t('settings.updateAvailable')}: v${result.version}`, 'info');
+      } else if (result.kind === 'already_staged') {
+        setOtaCheckState('ready');
+        setAvailableOtaVersion(result.version);
+      } else if (result.kind === 'unsupported') {
+        setOtaCheckState('up_to_date');
+        showToast(t('settings.browserEnvNotice'), 'info');
+      } else if (result.kind === 'error') {
+        setOtaCheckState('error');
+        setOtaErrorMessage(result.message);
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      setOtaCheckState('error');
+      const msg = error instanceof Error ? error.message : t('settings.updateError');
+      setOtaErrorMessage(msg);
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    setOtaCheckState('downloading');
+    setOtaErrorMessage(null);
+    try {
+      const result = await downloadOtaUpdate();
+      if (result.success) {
+        setOtaCheckState('ready');
+        if (result.stagedVersion) {
+          setAvailableOtaVersion(result.stagedVersion);
+        }
+        showToast(t('settings.updateReady'), 'success');
+      } else {
+        setOtaCheckState('error');
+        setOtaErrorMessage(result.error ?? t('settings.downloadError'));
+        showToast(result.error ?? t('settings.downloadError'), 'error');
+      }
+    } catch (error) {
+      setOtaCheckState('error');
+      const msg = error instanceof Error ? error.message : t('settings.downloadError');
+      setOtaErrorMessage(msg);
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleRestart = async () => {
+    await applyOtaUpdate();
+  };
+
   const themeOptions = [
     { value: 'dark', label: t('settings.themeDark') },
     { value: 'light', label: t('settings.themeLight') },
     { value: 'system', label: t('settings.themeSystem') },
   ] as const;
 
-  const languageOptions = [
-    { value: 'en', label: 'English' },
-    { value: 'pt-BR', label: 'Português (Brasil)' },
-  ] as const;
+  const LANGUAGE_LIST: { value: LanguagePreference; flag: string; label: string }[] = [
+    { value: 'pt-BR', flag: '🇧🇷', label: 'Português (Brasil)' },
+    { value: 'en', flag: '🇺🇸', label: 'English' },
+    { value: 'es', flag: '🇪🇸', label: 'Español' },
+    { value: 'de', flag: '🇩🇪', label: 'Deutsch' },
+    { value: 'it', flag: '🇮🇹', label: 'Italiano' },
+    { value: 'hi', flag: '🇮🇳', label: 'हिन्दी' },
+  ];
+
+  const [langSheetOpen, setLangSheetOpen] = useState(false);
+  const [licensesOpen, setLicensesOpen] = useState(false);
+  const currentLang = LANGUAGE_LIST.find((item) => item.value === settings.language) ?? LANGUAGE_LIST[0]!;
+
+  const handleSelectLanguage = (lang: LanguagePreference) => {
+    void hapticSelection();
+    void update({ language: lang });
+    setLangSheetOpen(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -144,18 +250,35 @@ export function SettingsPage() {
         </p>
       </header>
 
-      <section className="flex flex-col gap-4">
+      <BlurFade durationMs={300} delayMs={0}>
+      <section className="flex flex-col gap-3">
         <SectionTitle title={t('settings.language')} />
-        <SegmentedControl<LanguagePreference>
-          label={t('settings.language')}
-          value={settings.language}
-          options={languageOptions}
-          onChange={(language) => void update({ language })}
-        />
+        <button
+          type="button"
+          onClick={() => setLangSheetOpen(true)}
+          className="flex h-13 w-full items-center justify-between rounded-[var(--radius-card)] border border-line bg-surface px-4 text-left transition-colors hover:border-focus/40 hover:bg-surface-2 active:bg-surface-3 cursor-pointer shadow-xs"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-[22px] leading-none select-none shrink-0" aria-hidden>
+              {currentLang.flag}
+            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="truncate text-[14px] font-medium text-ink">
+                {currentLang.label}
+              </span>
+              <span className="text-[11px] text-ink-muted">
+                {t('settings.language')}
+              </span>
+            </div>
+          </div>
+          <ChevronDown className="size-4 shrink-0 text-ink-muted" aria-hidden />
+        </button>
       </section>
+      </BlurFade>
 
       <Divider />
 
+      <BlurFade durationMs={300} delayMs={70}>
       <section className="flex flex-col gap-4">
         <SectionTitle title={t('settings.appearance')} />
         <SegmentedControl<ThemePreference>
@@ -171,9 +294,40 @@ export function SettingsPage() {
           onChange={(showTransparencyGrid) => void update({ showTransparencyGrid })}
         />
       </section>
+      </BlurFade>
 
       <Divider />
 
+      <BlurFade durationMs={300} delayMs={140}>
+      <section className="flex flex-col gap-4">
+        <SectionTitle
+          title={t('settings.attribution')}
+          description={t('settings.attributionDesc')}
+        />
+        <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
+          <TextInput
+            label={t('settings.authorName')}
+            name="settings-author-display-name"
+            value={settings.authorDisplayName}
+            maxLength={24}
+            placeholder="Vassiliev"
+            onChange={(e) => void update({ authorDisplayName: e.target.value.slice(0, 24) })}
+            hint={t('settings.authorNameHint')}
+          />
+          <p className="mt-3 flex items-center justify-center gap-x-1.5 rounded-[10px] border border-line bg-surface-2 px-3 py-2.5 text-center text-[12px] text-ink-soft">
+            <span className="font-medium text-ink">{settings.authorDisplayName.trim() || 'Vassiliev'}</span>
+            <span aria-hidden className="text-ink-muted">·</span>
+            <span className="text-ink-muted">{INSTAGRAM_LABEL}</span>
+            <span aria-hidden className="text-ink-muted">·</span>
+            <span className="font-medium text-ink">{INSTAGRAM_HANDLE}</span>
+          </p>
+        </div>
+      </section>
+      </BlurFade>
+
+      <Divider />
+
+      <BlurFade durationMs={300} delayMs={210}>
       <section className="flex flex-col gap-4">
         <SectionTitle title={t('settings.editorAndPacks')} />
         <SwitchField
@@ -197,9 +351,11 @@ export function SettingsPage() {
           onChange={(performanceDiagnostics) => void update({ performanceDiagnostics })}
         />
       </section>
+      </BlurFade>
 
       <Divider />
 
+      <BlurFade durationMs={300} delayMs={280}>
       <section className="flex flex-col gap-3">
         <SectionTitle
           title={t('settings.storage')}
@@ -264,7 +420,9 @@ export function SettingsPage() {
           </Button>
         </div>
       </section>
+      </BlurFade>
 
+      <BlurFade durationMs={300} delayMs={340}>
       <section className="flex flex-col gap-3">
         <SectionTitle title={t('settings.privacy')} />
         <div className="flex items-start gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
@@ -272,14 +430,89 @@ export function SettingsPage() {
           <p className="text-[13px] leading-relaxed text-ink-soft">{t('settings.privacyDesc')}</p>
         </div>
       </section>
+      </BlurFade>
 
+      <BlurFade durationMs={300} delayMs={330}>
+      <section className="flex flex-col gap-3">
+        <SectionTitle
+          title={t('settings.updates')}
+          description={t('settings.updatesDesc')}
+        />
+        <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[13px] text-ink-soft">
+              <Download className="size-4 text-ink-muted" aria-hidden />
+              {t('settings.currentVersion')}
+            </span>
+            <Badge tone="neutral">
+              v{otaStatus?.currentVersion || APP_INFO.version}
+            </Badge>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 border-t border-line/60">
+            <span className="text-[13px] text-ink-soft">
+              {t('settings.updateStatus')}
+            </span>
+            <span className="text-[12px] font-medium text-ink-muted">
+              {otaCheckState === 'checking' && t('settings.checkingUpdates')}
+              {otaCheckState === 'downloading' && t('settings.downloadingUpdate')}
+              {otaCheckState === 'update_available' && `${t('settings.updateAvailable')} (v${availableOtaVersion})`}
+              {otaCheckState === 'ready' && t('settings.updateReady')}
+              {(otaCheckState === 'idle' || otaCheckState === 'up_to_date') && t('settings.upToDate')}
+              {otaCheckState === 'error' && (otaErrorMessage || t('settings.updateError'))}
+            </span>
+          </div>
+
+          {otaCheckState === 'ready' && (
+            <div className="mt-1 rounded-[10px] bg-surface-2 p-2.5 text-[12px] leading-relaxed text-ink-muted">
+              {t('settings.updateReadyDesc')}
+            </div>
+          )}
+
+          <div className="pt-2">
+            {otaCheckState === 'update_available' || otaCheckState === 'downloading' ? (
+              <Button
+                variant="primary"
+                fullWidth
+                loading={otaCheckState === 'downloading'}
+                onClick={() => void handleDownloadUpdate()}
+                icon={<Download className="size-4" aria-hidden />}
+              >
+                {otaCheckState === 'downloading' ? t('settings.downloadingUpdate') : t('settings.updateNow')}
+              </Button>
+            ) : otaCheckState === 'ready' ? (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => void handleRestart()}
+                icon={<RefreshCw className="size-4" aria-hidden />}
+              >
+                {t('settings.restartNow')}
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                fullWidth
+                loading={otaCheckState === 'checking'}
+                onClick={() => void handleCheckUpdates()}
+                icon={<RefreshCw className="size-4" aria-hidden />}
+              >
+                {t('settings.checkForUpdates')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+      </BlurFade>
+
+      <BlurFade durationMs={300} delayMs={350}>
       <section className="flex flex-col gap-3">
         <SectionTitle title={t('settings.about')} />
         <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
           <span className="flex items-center gap-2 text-[13px] text-ink-soft">
             <Sticker className="size-4" aria-hidden /> {t('settings.version')}
           </span>
-          <Badge tone="neutral">{APP_INFO.version}</Badge>
+          <Badge tone="neutral">v{otaStatus?.currentVersion || APP_INFO.version}</Badge>
         </div>
         <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
           <span className="flex items-center gap-2 text-[13px] text-ink-soft">
@@ -287,59 +520,87 @@ export function SettingsPage() {
           </span>
           <span className="text-[13px] font-medium text-ink">{APP_INFO.licenseName}</span>
         </div>
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={openRepository}
-          icon={<ExternalLink className="size-4" aria-hidden />}
-        >
-          {t('settings.viewSource')}
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button
+            variant="quiet"
+            fullWidth
+            onClick={() => setLicensesOpen(true)}
+            icon={<CheckCircle2 className="size-4" aria-hidden />}
+          >
+            Licenças de código aberto
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={openRepository}
+            icon={<ExternalLink className="size-4" aria-hidden />}
+          >
+            {t('settings.viewSource')}
+          </Button>
+        </div>
+        <p className="flex items-start gap-2 text-[12px] leading-relaxed text-ink-muted pt-1">
+          <Palette className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          {t('settings.whatsAppDisclaimer')}
+        </p>
       </section>
+      </BlurFade>
 
-      <section className="flex flex-col gap-3">
-        <SectionTitle title={t('settings.creditsAndLicenses')} />
-        <ul className="flex flex-col gap-2">
+      <footer className="mt-6 flex flex-col items-center justify-center border-t border-line/40 pt-7 pb-2 text-center select-none">
+        <span
+          aria-hidden
+          className="mb-3 flex size-11 items-center justify-center rounded-full border border-line bg-surface"
+        >
+          <Sticker className="size-5 text-ink-muted" />
+        </span>
+        <p className="text-[13px] font-semibold tracking-[0.08em] text-ink">
+          Shappire Stickers
+        </p>
+        <p className="mt-1 text-[11.5px] text-ink-muted">
+          Developed by <span className="text-ink-soft">Vassiliev</span>
+        </p>
+        <a
+          href={INSTAGRAM_PROFILE_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          onClick={(event) => {
+            event.preventDefault();
+            void openExternalLink(INSTAGRAM_PROFILE_URL);
+          }}
+          className="group mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-ink-soft transition-colors hover:text-ink active:scale-[0.97] touch-manipulation"
+        >
+          <AtSign className="size-3.5 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
+          <span className="tracking-wide underline-offset-4 group-hover:underline">Instagram: {INSTAGRAM_HANDLE}</span>
+          <ExternalLink className="size-3 text-ink-muted" aria-hidden />
+        </a>
+      </footer>
+
+      <Modal
+        open={licensesOpen}
+        title="Licenças de Código Aberto"
+        description="Agradecimento aos projetos de software livre utilizados no Shappire Stickers."
+        onClose={() => setLicensesOpen(false)}
+        footer={
+          <Button variant="secondary" onClick={() => setLicensesOpen(false)}>
+            {t('common.close') || 'Fechar'}
+          </Button>
+        }
+      >
+        <ul className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto no-scrollbar py-1">
           {CREDITS.map((lib) => (
             <li key={lib.name}>
               <a
                 href={lib.url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-2.5 transition-colors hover:bg-surface-2"
+                className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 py-2.5 transition-colors hover:bg-surface-3"
               >
-                <span className="flex items-center gap-2 text-[13px] text-ink">
-                  <CheckCircle2 className="size-3.5 text-ink-muted" aria-hidden />
-                  {lib.name}
-                </span>
-                <span className="text-[12px] text-ink-muted">{lib.license}</span>
+                <span className="text-[13px] font-medium text-ink">{lib.name}</span>
+                <span className="text-[12px] font-mono text-ink-muted">{lib.license}</span>
               </a>
             </li>
           ))}
         </ul>
-        <p className="flex items-start gap-2 text-[12px] leading-relaxed text-ink-muted">
-          <Palette className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          {t('settings.whatsAppDisclaimer')}
-        </p>
-      </section>
-
-      <footer className="mt-4 flex flex-col items-center justify-center border-t border-line/60 pt-6 pb-4 text-center">
-        <p className="text-[13px] font-normal text-ink-muted">
-          Made with ♡ in Brazil by{' '}
-          <a
-            href="https://www.instagram.com/vassilievz/"
-            onClick={(e) => {
-              e.preventDefault();
-              window.open('https://www.instagram.com/vassilievz/', '_blank', 'noopener,noreferrer');
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-ink transition-colors hover:text-ink-soft active:opacity-75 underline underline-offset-4 decoration-line/80 hover:decoration-ink-soft"
-          >
-            vassiliev
-          </a>
-        </p>
-      </footer>
+      </Modal>
 
       <ConfirmDialog
         open={cleanupKind !== null}
@@ -361,6 +622,50 @@ export function SettingsPage() {
         onConfirm={() => void runCleanup()}
         onCancel={() => setCleanupKind(null)}
       />
+
+      <BottomSheet
+        open={langSheetOpen}
+        title={t('settings.languageSelect')}
+        onClose={() => setLangSheetOpen(false)}
+      >
+        <div className="flex flex-col gap-1.5 pb-2">
+          {LANGUAGE_LIST.map((item) => {
+            const isSelected = item.value === settings.language;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => handleSelectLanguage(item.value)}
+                className={cx(
+                  'flex w-full items-center justify-between rounded-[var(--radius-control)] px-3.5 py-3 text-left transition-all',
+                  isSelected
+                    ? 'bg-surface-3 text-ink ring-1 ring-white/15'
+                    : 'text-ink-soft hover:bg-surface-2 hover:text-ink active:bg-surface-3',
+                )}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-[24px] leading-none select-none shrink-0" aria-hidden>
+                    {item.flag}
+                  </span>
+                  <span className="truncate text-[14px] font-medium text-ink">
+                    {item.label}
+                  </span>
+                </div>
+                <div
+                  className={cx(
+                    'flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    isSelected
+                      ? 'border-focus bg-accent text-on-accent'
+                      : 'border-line bg-surface-2',
+                  )}
+                >
+                  {isSelected ? <Check className="size-3 stroke-[3]" aria-hidden /> : null}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </BottomSheet>
     </div>
   );
 }

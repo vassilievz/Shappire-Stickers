@@ -143,3 +143,51 @@ export function distanceToPolyline(point: Point, path: readonly Point[]): number
   }
   return min;
 }
+
+export interface SnapResult {
+  x: number;
+  y: number;
+  snapX: boolean;
+  snapY: boolean;
+}
+
+/**
+ * Calculates snapping of element center to canvas center (512/2 = 256)
+ * when within threshold distance.
+ */
+export function calculateCenterSnap(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  canvasSize = EDITOR_CONFIG.canvasSize,
+  threshold = 8,
+): SnapResult {
+  const centerX = canvasSize / 2;
+  const centerY = canvasSize / 2;
+
+  const elemCenterX = x + width / 2;
+  const elemCenterY = y + height / 2;
+
+  let snapX = false;
+  let snapY = false;
+  let newX = x;
+  let newY = y;
+
+  if (Math.abs(elemCenterX - centerX) <= threshold) {
+    newX = centerX - width / 2;
+    snapX = true;
+  }
+
+  if (Math.abs(elemCenterY - centerY) <= threshold) {
+    newY = centerY - height / 2;
+    snapY = true;
+  }
+
+  return {
+    x: newX,
+    y: newY,
+    snapX,
+    snapY,
+  };
+}

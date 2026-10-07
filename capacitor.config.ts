@@ -33,6 +33,9 @@ const config: CapacitorConfig = {
       backgroundColor: '#08090b',
       overlaysWebView: false,
     },
+    OtaKit: {
+      appId: 'c4cf6be0-def9-480d-936e-0be638499ca3',
+    },
   },
 };
 

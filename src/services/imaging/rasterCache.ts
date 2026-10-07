@@ -51,12 +51,16 @@ export class EditorRasterCache implements RasterResources {
   getImageRaster(element: ImageElement): RasterEntry | null {
     const source = this.assets.get(element.assetPath);
     if (!source) return null;
+    const filtersKey = element.filters
+      ? `${element.filters.brightness}:${element.filters.contrast}:${element.filters.saturation}:${element.filters.grayscale ? 1 : 0}:${element.filters.sepia ? 1 : 0}:${element.filters.invert ? 1 : 0}`
+      : 'no-filter';
     const key = [
       'img',
       element.assetPath,
       `${Math.round(element.width)}x${Math.round(element.height)}`,
       maskRevision(element.maskStrokes),
       element.stroke.enabled ? `${element.stroke.color}:${element.stroke.width}` : 'no-stroke',
+      filtersKey,
       this.scale,
     ].join('|');
     return this.resolve(key, () => ({
@@ -67,6 +71,7 @@ export class EditorRasterCache implements RasterResources {
           height: element.height,
           maskStrokes: element.maskStrokes,
           stroke: element.stroke,
+          filters: element.filters,
         },
         { scale: this.scale, factory: this.factory },
       ),

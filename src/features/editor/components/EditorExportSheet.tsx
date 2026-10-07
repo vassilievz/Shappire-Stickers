@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Check, FolderPlus, Package, Send } from 'lucide-react';
 import { WHATSAPP_LIMITS } from '@/config/whatsapp';
 import { validateEmojis } from '@/domain/validation/whatsappRules';
-import { STICKER_AUTHOR } from '@/domain/stickerPack';
 import { Badge, Button } from '@/shared/components/primitives';
 import { BottomSheet } from '@/shared/components/overlays';
 import { TextInput } from '@/shared/components/inputs';
@@ -16,17 +16,21 @@ import { friendlyMessage } from '@/shared/errors';
 import { formatBytes } from '@/shared/utils/format';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
+import { formatAuthorAttribution } from '@/config/attribution';
 
 export interface EditorExportSheetProps {
   open: boolean;
   onClose: () => void;
+  onExportSuccess?: (packId: string) => void;
 }
 
-export function EditorExportSheet({ open, onClose }: EditorExportSheetProps) {
+export function EditorExportSheet({ open, onClose, onExportSuccess }: EditorExportSheetProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const packs = useLibraryStore((state) => state.packs);
   const refresh = useLibraryStore((state) => state.refresh);
-  const defaultPackId = useSettingsStore((state) => state.settings.defaultPackId);
+  const settings = useSettingsStore((state) => state.settings);
+  const defaultPackId = settings.defaultPackId;
   const currentPackId = useEditorStore((state) => state.packId);
   const exporting = useEditorStore((state) => state.exporting);
   const elementCount = useEditorStore((state) => state.history.present.length);
@@ -64,11 +68,18 @@ export function EditorExportSheet({ open, onClose }: EditorExportSheetProps) {
     }
 
     try {
-      const result = await exportStickerToPack(selectedPack.id, { emojis: emojiList });
+      const result = await exportStickerToPack(selectedPack.id, {
+        emojis: emojiList,
+      });
       if (result.warnings.length > 0) {
         showToast(result.warnings[0] ?? '', 'info');
       }
       onClose();
+      if (onExportSuccess) {
+        onExportSuccess(selectedPack.id);
+      } else {
+        void navigate(`/pacotes/${selectedPack.id}`);
+      }
     } catch (error) {
       showToast(friendlyMessage(error), 'error');
     }
@@ -171,12 +182,11 @@ export function EditorExportSheet({ open, onClose }: EditorExportSheetProps) {
               hint={t('packDetail.emojisHint')}
             />
 
-            <div className="flex flex-col gap-1 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 py-2.5">
-              <span className="text-[11px] font-medium tracking-wide uppercase text-ink-muted">
-                {t('packDetail.creatorCreditLabel')}
-              </span>
-              <span className="text-[13px] font-medium text-ink select-all">
-                {STICKER_AUTHOR}
+            {/* Autoria: exibida apenas na tela de detalhe (abaixo da figurinha) — nunca gravada na imagem. */}
+            <div className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
+              <span className="text-[12px] leading-relaxed text-ink-muted">{t('editor.export.attributionNote')}</span>
+              <span className="shrink-0 font-mono text-[11px] text-ink-soft">
+                {formatAuthorAttribution(settings.authorDisplayName)}
               </span>
             </div>
 

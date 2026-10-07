@@ -140,13 +140,29 @@ export async function addStickerToPack(
     throw new AppError(capacity.code ?? 'PACK_TOO_MANY_STICKERS', capacity.reason ?? 'Pacote cheio.');
   }
 
+  const isAnimated = input.isAnimated ?? false;
+
+  if (pack.stickers.length > 0) {
+    if (pack.stickerType === 'static' && isAnimated) {
+      throw new AppError(
+        'PACK_MIXED_TYPES',
+        'Pacotes estáticos só aceitam imagens estáticas. Para figurinhas animadas (GIF), crie um novo pacote do tipo Animado.',
+      );
+    }
+    if (pack.stickerType === 'animated' && !isAnimated) {
+      throw new AppError(
+        'PACK_MIXED_TYPES',
+        'Pacotes animados só aceitam figurinhas animadas (GIF). Para figurinhas estáticas, crie um novo pacote do tipo Estático.',
+      );
+    }
+  }
+
   const fileName = nextStickerFileName(pack);
   const { sizeBytes } = await writeStickerFile(pack.id, {
     fileName,
     base64: input.artwork.base64,
   });
 
-  const isAnimated = input.isAnimated ?? false;
   const sticker: StickerRecord = {
     id: createId('stk'),
     fileName,
@@ -165,10 +181,14 @@ export async function addStickerToPack(
   const tray =
     pack.trayImage ?? (await buildTrayFromStickerFile(pack.id, sticker));
 
+  const targetStickerType = pack.stickers.length === 0
+    ? (isAnimated ? 'animated' : 'static')
+    : pack.stickerType;
+
   const updated = updateStickerPack(pack, {
     stickers: [...pack.stickers, sticker],
     trayImage: tray,
-    stickerType: isAnimated ? 'animated' : pack.stickerType,
+    stickerType: targetStickerType,
   });
   const next = packs.map((item, i) => (i === index ? updated : item));
   await persistPack(next);
@@ -227,7 +247,20 @@ export async function removeStickerFromPack(packId: string, stickerId: string): 
       ? await removeTrayAndFile(packId, keepTray.fileName)
       : keepTray;
 
-  const updated = updateStickerPack(pack, { stickers: remaining, trayImage: tray });
+  const nextStickerType =
+    remaining.length === 0
+      ? pack.stickerType
+      : remaining.every((s) => !s.isAnimated)
+        ? 'static'
+        : remaining.every((s) => Boolean(s.isAnimated))
+          ? 'animated'
+          : pack.stickerType;
+
+  const updated = updateStickerPack(pack, {
+    stickers: remaining,
+    trayImage: tray,
+    stickerType: nextStickerType,
+  });
   const next = packs.map((item, i) => (i === index ? updated : item));
   await persistPack(next);
   return updated;

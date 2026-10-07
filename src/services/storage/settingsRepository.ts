@@ -3,7 +3,7 @@ import { readJson, writeJson } from './jsonStore';
 import { settingsPath } from './paths';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
-export type LanguagePreference = 'en' | 'pt-BR';
+export type LanguagePreference = 'en' | 'pt-BR' | 'es' | 'de' | 'it' | 'hi';
 
 
 export interface AppSettings {
@@ -19,6 +19,9 @@ export interface AppSettings {
   performanceDiagnostics: boolean;
   
   lastRoute: string;
+
+  /** Nome de exibição do autor mostrado ABAIXO da figurinha na tela de detalhe. Não é gravado na imagem. */
+  authorDisplayName: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -29,12 +32,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
   confirmDestructiveActions: true,
   performanceDiagnostics: false,
   lastRoute: '/inicio',
+  authorDisplayName: 'Vassiliev',
 };
 
 interface SettingsDocument {
   schemaVersion: number;
   settings: AppSettings;
 }
+
+const SUPPORTED_LANGUAGES: ReadonlySet<string> = new Set([
+  'en',
+  'pt-BR',
+  'es',
+  'de',
+  'it',
+  'hi',
+]);
 
 function sanitize(value: Partial<AppSettings> | null | undefined): AppSettings {
   if (!value) return { ...DEFAULT_SETTINGS };
@@ -43,7 +56,9 @@ function sanitize(value: Partial<AppSettings> | null | undefined): AppSettings {
       ? value.theme
       : DEFAULT_SETTINGS.theme;
   const language: LanguagePreference =
-    value.language === 'pt-BR' || value.language === 'en' ? value.language : DEFAULT_SETTINGS.language;
+    value.language && SUPPORTED_LANGUAGES.has(value.language)
+      ? (value.language as LanguagePreference)
+      : DEFAULT_SETTINGS.language;
   return {
     theme,
     language,
@@ -61,6 +76,15 @@ function sanitize(value: Partial<AppSettings> | null | undefined): AppSettings {
         ? value.performanceDiagnostics
         : DEFAULT_SETTINGS.performanceDiagnostics,
     lastRoute: typeof value.lastRoute === 'string' ? value.lastRoute : DEFAULT_SETTINGS.lastRoute,
+    authorDisplayName:
+      typeof value.authorDisplayName === 'string'
+        ? value.authorDisplayName.slice(0, 24).trim()
+        : (value as { authorSignatureName?: unknown }).authorSignatureName &&
+            typeof (value as { authorSignatureName?: unknown }).authorSignatureName === 'string'
+          ? String((value as { authorSignatureName?: unknown }).authorSignatureName)
+              .slice(0, 24)
+              .trim()
+          : DEFAULT_SETTINGS.authorDisplayName,
   };
 }
 

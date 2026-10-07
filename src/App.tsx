@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
+import { AppSplashScreen } from '@/app/AppSplashScreen';
 import { EditorPage } from '@/features/editor/EditorPage';
 import { HomePage } from '@/features/home/HomePage';
 import { PackDetailPage } from '@/features/packs/PackDetailPage';
@@ -8,17 +9,27 @@ import { PacksPage } from '@/features/packs/PacksPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
-
+import { notifyAppReadyIfNative } from '@/services/ota/otaService';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    void hydrateSettings();
+    void hydrateSettings().finally(() => {
+      setIsReady(true);
+    });
   }, [hydrateSettings]);
+
+  useEffect(() => {
+    if (isReady) {
+      void notifyAppReadyIfNative();
+    }
+  }, [isReady]);
 
   return (
     <HashRouter>
+      <AppSplashScreen isReady={isReady} />
       <ToastHost />
       <Routes>
         <Route element={<AppShell />}>

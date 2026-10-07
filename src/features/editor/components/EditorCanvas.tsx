@@ -11,7 +11,7 @@ import {
   Transformer,
 } from 'react-konva';
 import { EDITOR_CONFIG } from '@/config/editor';
-import { elementCenter } from '@/domain/editor/geometry';
+import { calculateCenterSnap, elementCenter } from '@/domain/editor/geometry';
 import {
   isTransformable,
   type DrawingStroke,
@@ -21,6 +21,7 @@ import {
 } from '@/domain/editor/elements';
 import type { RasterEntry } from '@/services/imaging/rasterCache';
 import { clamp, degToRad } from '@/shared/utils/math';
+import { hapticSelection } from '@/services/native/haptics';
 import { getEditorRasters, useEditorStore } from '@/features/editor/store/editorStore';
 import {
   beginDrawingStroke,
@@ -43,9 +44,10 @@ interface WorldPoint {
 
 export interface EditorCanvasProps {
   rasterNonce: number;
+  showSafeArea?: boolean;
 }
 
-export function EditorCanvas({ rasterNonce }: EditorCanvasProps) {
+export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const groupRef = useRef<Konva.Group | null>(null);
@@ -56,6 +58,8 @@ export function EditorCanvas({ rasterNonce }: EditorCanvasProps) {
   const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
 
   const [size, setSize] = useState(0);
+  const [activeSnapLines, setActiveSnapLines] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
+  const snappedRef = useRef<{ x: boolean; y: boolean }>({ x: false, y: false });
 
   const elements = useEditorStore((state) => state.history.present);
   const selectedIds = useEditorStore((state) => state.selectedIds);
@@ -337,6 +341,21 @@ export function EditorCanvas({ rasterNonce }: EditorCanvasProps) {
                 listening={false}
               />
 
+              {/* WhatsApp Safe Area overlay (16px inset boundary = 480x480 at 16,16) */}
+              {showSafeArea ? (
+                <Rect
+                  x={16}
+                  y={16}
+                  width={CANVAS - 32}
+                  height={CANVAS - 32}
+                  stroke="#25D366"
+                  strokeWidth={1.5 / viewport.zoom}
+                  dash={[6 / viewport.zoom, 4 / viewport.zoom]}
+                  listening={false}
+                  opacity={0.85}
+                />
+              ) : null}
+
               {elements.map((element) => (
                 <ElementNode
                   key={element.id}
@@ -350,8 +369,65 @@ export function EditorCanvas({ rasterNonce }: EditorCanvasProps) {
                   onSelect={(id) => {
                     if (activeTool === 'select') useEditorStore.getState().selectOnly(id);
                   }}
+                  onDragMove={(el, node) => {
+                    const snap = calculateCenterSnap(
+                      node.x() - el.width / 2,
+                      node.y() - el.height / 2,
+                      el.width,
+                      el.height,
+                      CANVAS,
+                      8,
+                    );
+                    if (snap.snapX) node.x(snap.x + el.width / 2);
+                    if (snap.snapY) node.y(snap.y + el.height / 2);
+
+                    const newlySnapped = (snap.snapX && !snappedRef.current.x) || (snap.snapY && !snappedRef.current.y);
+                    if (newlySnapped) {
+                      hapticSelection();
+                    }
+                    snappedRef.current = { x: snap.snapX, y: snap.snapY };
+                    setActiveSnapLines({ x: snap.snapX, y: snap.snapY });
+                  }}
+                  onDragEnd={(el, node) => {
+                    setActiveSnapLines({ x: false, y: false });
+                    snappedRef.current = { x: false, y: false };
+                    const snap = calculateCenterSnap(
+                      node.x() - el.width / 2,
+                      node.y() - el.height / 2,
+                      el.width,
+                      el.height,
+                      CANVAS,
+                      8,
+                    );
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    useEditorStore.getState().updateElement(el.id, {
+                      x: snap.x,
+                      y: snap.y,
+                    });
+                  }}
                 />
               ))}
+
+              {/* Center Magnetic Snap Lines */}
+              {activeSnapLines.x ? (
+                <Line
+                  points={[CANVAS / 2, 0, CANVAS / 2, CANVAS]}
+                  stroke="#FF4B4B"
+                  strokeWidth={1.5 / viewport.zoom}
+                  dash={[4 / viewport.zoom, 4 / viewport.zoom]}
+                  listening={false}
+                />
+              ) : null}
+              {activeSnapLines.y ? (
+                <Line
+                  points={[0, CANVAS / 2, CANVAS, CANVAS / 2]}
+                  stroke="#FF4B4B"
+                  strokeWidth={1.5 / viewport.zoom}
+                  dash={[4 / viewport.zoom, 4 / viewport.zoom]}
+                  listening={false}
+                />
+              ) : null}
 
               {activeMask ? <MaskHintLayer elements={elements} points={activeMask.points} /> : null}
 
@@ -392,6 +468,8 @@ interface ElementNodeProps {
   showMaskHint: boolean;
   registerNode: (id: string, node: Konva.Node | null) => void;
   onSelect: (id: string) => void;
+  onDragMove?: (element: TransformableElement, node: Konva.Node) => void;
+  onDragEnd?: (element: TransformableElement, node: Konva.Node) => void;
 }
 
 function ElementNode({
@@ -403,6 +481,8 @@ function ElementNode({
   showMaskHint,
   registerNode,
   onSelect,
+  onDragMove,
+  onDragEnd,
 }: ElementNodeProps) {
   const raster: RasterEntry | null = useMemo(() => {
     void rasterNonce;
@@ -462,16 +542,24 @@ function ElementNode({
         rotation={element.rotation}
         opacity={element.opacity}
         listening={interactive && !element.locked}
+        draggable={interactive && !element.locked}
         onClick={() => onSelect(element.id)}
         onTap={() => onSelect(element.id)}
+        onDragMove={(event) => {
+          onDragMove?.(element, event.target);
+        }}
         onDragEnd={(event) => {
           const node = event.target;
-          node.scaleX(1);
-          node.scaleY(1);
-          useEditorStore.getState().updateElement(element.id, {
-            x: node.x() - element.width / 2,
-            y: node.y() - element.height / 2,
-          });
+          if (onDragEnd) {
+            onDragEnd(element, node);
+          } else {
+            node.scaleX(1);
+            node.scaleY(1);
+            useEditorStore.getState().updateElement(element.id, {
+              x: node.x() - element.width / 2,
+              y: node.y() - element.height / 2,
+            });
+          }
         }}
         onTransformEnd={(event) => {
           const node = event.target;

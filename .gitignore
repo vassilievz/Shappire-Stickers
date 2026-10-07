@@ -39,3 +39,10 @@ coverage/
 .freebuff/
 .agents/
 
+# Variáveis de ambiente e credenciais
+.env
+.env.*
+!.env.example
+.otakit*
+otakit.config.json
+

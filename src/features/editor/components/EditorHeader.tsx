@@ -80,7 +80,7 @@ export function EditorHeader({
         type="button"
         onClick={onExport}
         disabled={exporting}
-        className="ml-1 inline-flex h-10 items-center gap-1.5 rounded-[12px] bg-accent px-3.5 text-[13px] font-semibold text-on-accent transition-opacity active:opacity-80 disabled:opacity-50"
+        className="ml-1 inline-flex h-10 shrink-0 whitespace-nowrap items-center gap-1.5 rounded-[12px] bg-accent px-3.5 text-[13px] font-semibold text-on-accent transition-all active:scale-[0.97] active:opacity-85 disabled:opacity-50 touch-manipulation"
       >
         {exporting ? (
           <LoaderCircle className="size-4 animate-spin" aria-hidden />

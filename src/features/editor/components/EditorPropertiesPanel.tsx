@@ -13,6 +13,7 @@ import {
   Lock,
   LockOpen,
   ScanLine,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { EDITOR_CONFIG, EDITOR_FONTS, QUICK_COLORS, type EditorFontId } from '@/config/editor';
@@ -20,6 +21,8 @@ import {
   isTransformable,
   type EditorElement,
   type ImageElement,
+  type ImageFilters,
+  DEFAULT_IMAGE_FILTERS,
   type StrokeStyle,
   type TextElement,
 } from '@/domain/editor/elements';
@@ -109,6 +112,10 @@ export function EditorPropertiesPanel({
           <StrokeSection
             stroke={element.stroke}
             onChange={(stroke) => useEditorStore.getState().updateElement(element.id, { stroke })}
+          />
+          <ImageFiltersSection
+            element={element}
+            onChange={(filters) => useEditorStore.getState().updateElement(element.id, { filters })}
           />
           {element.maskStrokes.length > 0 ? (
             <Button
@@ -237,7 +244,7 @@ function NudgeButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-10 items-center justify-center rounded-[10px] border border-line bg-surface-2 text-ink-soft transition-colors hover:bg-surface-3 active:scale-95"
+      className="flex h-11 min-h-[44px] items-center justify-center rounded-[10px] border border-line bg-surface-2 text-ink-soft transition-colors hover:bg-surface-3 active:scale-95 touch-manipulation"
     >
       {children}
     </button>
@@ -292,6 +299,29 @@ function TextSection({ element }: { element: TextElement }) {
   return (
     <section className="flex flex-col gap-4">
       <SectionTitle>{t('editor.properties.textSection')}</SectionTitle>
+      <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface-2 p-3">
+        <div>
+          <p className="text-[13px] font-semibold text-ink">{t('editor.properties.memePreset')}</p>
+          <p className="text-[11px] text-ink-muted">{t('editor.properties.memePresetDesc')}</p>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            apply({
+              text: element.text.toUpperCase(),
+              color: '#FFFFFF',
+              stroke: { enabled: true, color: '#000000', width: 8 },
+              shadow: { enabled: true, color: 'rgba(0,0,0,0.8)', blur: 4, offsetX: 2, offsetY: 2 },
+              align: 'center',
+            });
+          }}
+          icon={<Sparkles className="size-3.5" aria-hidden />}
+        >
+          {t('editor.properties.memePreset')}
+        </Button>
+      </div>
+
       <TextArea
         label={t('editor.properties.textContent')}
         name="editor-text"
@@ -417,6 +447,100 @@ function StrokeSection({
           />
         </>
       ) : null}
+    </section>
+  );
+}
+
+function ImageFiltersSection({
+  element,
+  onChange,
+}: {
+  element: ImageElement;
+  onChange: (filters: ImageFilters) => void;
+}) {
+  const { t } = useTranslation();
+  const filters: ImageFilters = element.filters ?? DEFAULT_IMAGE_FILTERS;
+
+  const update = (patch: Partial<ImageFilters>) => {
+    onChange({ ...filters, ...patch });
+  };
+
+  const hasAdjustments =
+    filters.brightness !== 0 ||
+    filters.contrast !== 0 ||
+    filters.saturation !== 0 ||
+    filters.grayscale ||
+    filters.sepia ||
+    filters.invert;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <SectionTitle>{t('editor.properties.filtersSection')}</SectionTitle>
+        {hasAdjustments && (
+          <button
+            type="button"
+            onClick={() => onChange(DEFAULT_IMAGE_FILTERS)}
+            className="text-[11px] font-medium text-accent hover:underline"
+          >
+            {t('editor.properties.resetFilters')}
+          </button>
+        )}
+      </div>
+
+      <SliderField
+        label={t('editor.properties.brightness')}
+        value={filters.brightness}
+        min={-50}
+        max={50}
+        step={2}
+        displayValue={`${filters.brightness > 0 ? `+${filters.brightness}` : filters.brightness}%`}
+        onChange={(brightness) => update({ brightness })}
+      />
+
+      <SliderField
+        label={t('editor.properties.contrast')}
+        value={filters.contrast}
+        min={-50}
+        max={50}
+        step={2}
+        displayValue={`${filters.contrast > 0 ? `+${filters.contrast}` : filters.contrast}%`}
+        onChange={(contrast) => update({ contrast })}
+      />
+
+      <SliderField
+        label={t('editor.properties.saturation')}
+        value={filters.saturation}
+        min={-50}
+        max={50}
+        step={2}
+        displayValue={`${filters.saturation > 0 ? `+${filters.saturation}` : filters.saturation}%`}
+        onChange={(saturation) => update({ saturation })}
+      />
+
+      <div className="grid grid-cols-3 gap-1.5 pt-1">
+        <Button
+          variant={filters.grayscale ? 'primary' : 'quiet'}
+          size="sm"
+          onClick={() => update({ grayscale: !filters.grayscale })}
+        >
+          {t('editor.properties.grayscale')}
+        </Button>
+        <Button
+          variant={filters.sepia ? 'primary' : 'quiet'}
+          size="sm"
+          onClick={() => update({ sepia: !filters.sepia })}
+        >
+          {t('editor.properties.sepia')}
+        </Button>
+        <Button
+          variant={filters.invert ? 'primary' : 'quiet'}
+          size="sm"
+          onClick={() => update({ invert: !filters.invert })}
+        >
+          {t('editor.properties.invert')}
+        </Button>
+      </div>
     </section>
   );
 }

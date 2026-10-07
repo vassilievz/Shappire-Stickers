@@ -25,8 +25,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-[13px] gap-1.5 rounded-[10px]',
-  md: 'h-11 px-4 text-sm gap-2 rounded-[var(--radius-control)]',
+  sm: 'h-9 px-3 text-[13px] gap-1.5 rounded-[10px] relative after:absolute after:-inset-0.5 after:content-[""]',
+  md: 'h-11 min-h-[44px] px-4 text-sm gap-2 rounded-[var(--radius-control)]',
   lg: 'h-13 min-h-[52px] px-5 text-[15px] gap-2.5 rounded-[14px]',
 };
 
@@ -48,7 +48,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       className={cx(
-        'inline-flex items-center justify-center font-medium transition-[background-color,opacity,transform] duration-150 select-none',
+        'inline-flex items-center justify-center font-medium transition-[background-color,opacity,transform] duration-150 select-none touch-manipulation whitespace-nowrap',
         'disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985]',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
@@ -93,8 +93,10 @@ export function IconButton({
       title={label}
       aria-pressed={active}
       className={cx(
-        'inline-flex items-center justify-center rounded-[10px] transition-colors duration-150',
-        size === 'sm' ? 'size-9' : 'size-11',
+        'inline-flex items-center justify-center rounded-[10px] transition-colors duration-150 touch-manipulation',
+        size === 'sm'
+          ? 'size-9 min-h-[36px] min-w-[36px] relative after:absolute after:-inset-1 after:content-[""]'
+          : 'size-11 min-h-[44px] min-w-[44px]',
         active
           ? 'bg-accent text-on-accent'
           : tone === 'danger'

@@ -35,12 +35,22 @@ function isStickerPack(value: unknown): value is StickerPack {
 
 
 function sanitizePack(pack: StickerPack): StickerPack {
+  const stickers = Array.isArray(pack.stickers) ? pack.stickers : [];
+  let stickerType = pack.stickerType ?? 'static';
+  if (stickers.length > 0) {
+    if (stickers.every((s) => !s.isAnimated)) {
+      stickerType = 'static';
+    } else if (stickers.every((s) => Boolean(s.isAnimated))) {
+      stickerType = 'animated';
+    }
+  }
+
   return {
     ...pack,
     publisher: STICKER_AUTHOR,
-    stickers: Array.isArray(pack.stickers) ? pack.stickers : [],
+    stickers,
     trayImage: pack.trayImage ?? null,
-    stickerType: pack.stickerType ?? 'static',
+    stickerType,
     avoidCache: pack.avoidCache ?? true,
     contentHash: pack.contentHash ?? '',
     links: { ...defaultPackLinks(), ...(pack.links ?? {}) },

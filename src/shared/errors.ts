@@ -20,6 +20,8 @@ export type AppErrorCode =
   | 'PACK_TOO_MANY_STICKERS'
   | 'PACK_TOO_FEW_STICKERS'
   | 'PACK_LIMIT_REACHED'
+  | 'PACK_MIXED_TYPES'
+  | 'PACK_TYPE_MISMATCH'
   | 'CANCELLED'
   | 'NATIVE_UNAVAILABLE'
   | 'WHATSAPP_NOT_INSTALLED'
@@ -84,6 +86,10 @@ const FRIENDLY_MESSAGES: Partial<Record<AppErrorCode, string>> = {
   PACK_TOO_MANY_STICKERS: 'Um pacote do WhatsApp aceita no máximo 30 figurinhas.',
   PACK_TOO_FEW_STICKERS: 'Um pacote do WhatsApp precisa de pelo menos 3 figurinhas.',
   PACK_LIMIT_REACHED: 'Limite de 10 pacotes por aplicativo atingido.',
+  PACK_MIXED_TYPES:
+    'O WhatsApp não permite misturar figurinhas estáticas e animadas no mesmo pacote.',
+  PACK_TYPE_MISMATCH:
+    'O tipo da figurinha não corresponde ao tipo deste pacote.',
   CANCELLED: 'Operação cancelada.',
   NATIVE_UNAVAILABLE: 'Este recurso só está disponível no aplicativo Android instalado.',
   WHATSAPP_NOT_INSTALLED: 'O WhatsApp não está instalado neste aparelho.',

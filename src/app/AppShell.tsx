@@ -15,7 +15,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-app">
       <main className="flex-1 w-full pb-[calc(env(safe-area-inset-bottom,0px)+92px)]">
-        <div className="mx-auto w-full max-w-[640px] px-4 pt-[calc(env(safe-area-inset-top,0px)+16px)] sm:px-6">
+        <div className="mx-auto w-full max-w-[768px] lg:max-w-[840px] px-4 pt-[calc(env(safe-area-inset-top,0px)+16px)] sm:px-6">
           <Outlet />
         </div>
       </main>
@@ -24,7 +24,7 @@ export function AppShell() {
         aria-label="Navegação principal"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-md safe-bottom"
       >
-        <ul className="mx-auto flex w-full max-w-[640px] items-stretch justify-around px-2">
+        <ul className="mx-auto flex w-full max-w-[768px] lg:max-w-[840px] items-stretch justify-around px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -34,7 +34,7 @@ export function AppShell() {
                   end={item.end}
                   className={({ isActive }) =>
                     cx(
-                      'flex flex-col items-center gap-1 py-2 transition-[color,transform] duration-150 active:scale-95 select-none',
+                      'flex min-h-[48px] flex-col items-center justify-center gap-1 py-1.5 transition-[color,transform] duration-150 active:scale-95 select-none touch-manipulation',
                       isActive ? 'text-ink' : 'text-ink-muted hover:text-ink-soft',
                     )
                   }

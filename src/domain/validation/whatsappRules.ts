@@ -267,6 +267,35 @@ export function validateStickerPack(
     );
   }
 
+  const hasAnimatedStickers = pack.stickers.some((s) => Boolean(s.isAnimated));
+  const hasStaticStickers = pack.stickers.some((s) => !s.isAnimated);
+
+  if (hasAnimatedStickers && hasStaticStickers) {
+    issues.push(
+      errorIssue(
+        'PACK_MIXED_TYPES',
+        'O WhatsApp não permite misturar figurinhas estáticas e animadas no mesmo pacote. Remova as figurinhas conflitantes para enviar.',
+        'stickers',
+      ),
+    );
+  } else if (isAnimatedPack && hasStaticStickers) {
+    issues.push(
+      errorIssue(
+        'PACK_TYPE_MISMATCH',
+        'Este pacote está configurado como Animado, mas contém figurinhas estáticas.',
+        'stickers',
+      ),
+    );
+  } else if (!isAnimatedPack && hasAnimatedStickers) {
+    issues.push(
+      errorIssue(
+        'PACK_TYPE_MISMATCH',
+        'Este pacote está configurado como Estático, mas contém figurinhas animadas.',
+        'stickers',
+      ),
+    );
+  }
+
   for (const sticker of pack.stickers) {
     issues.push(
       ...validateStickerRecord(sticker, options.files?.get(sticker.fileName), { isAnimatedPack }),

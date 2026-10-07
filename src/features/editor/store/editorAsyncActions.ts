@@ -202,7 +202,10 @@ export interface StickerExportResult {
 
 export async function exportStickerToPack(
   packId: string,
-  meta: { emojis?: string[]; accessibilityText?: string } = {},
+  meta: {
+    emojis?: string[];
+    accessibilityText?: string;
+  } = {},
 ): Promise<StickerExportResult> {
   const store = useEditorStore.getState();
   const elements = store.history.present;
@@ -211,10 +214,13 @@ export async function exportStickerToPack(
     const artwork = await measure(
       'export.artwork',
       () =>
-        exportStickerArtwork({
-          elements,
-          resources: getEditorRasters(),
-        }),
+        exportStickerArtwork(
+          {
+            elements,
+            resources: getEditorRasters(),
+          },
+          {},
+        ),
       { elements: elements.length },
     );
     const { pack, sticker } = await addStickerToPack({
@@ -283,3 +289,29 @@ export function releaseEditorResources(): void {
   getEditorAssets().clear();
   getEditorRasters().clear();
 }
+
+export async function addImageFromDataUrlToCanvas(
+  dataUrl: string,
+  name = 'Elemento',
+): Promise<boolean> {
+  const store = useEditorStore.getState();
+  const projectId = store.projectId;
+  if (!projectId) return false;
+
+  const assets = getEditorAssets();
+  const decoded = await decodeImageFromDataUrl(dataUrl);
+  const base64 = dataUrlToBase64(dataUrl);
+  const fileName = `${createId('asset')}.png`;
+  const assetPath = await writeProjectAsset(projectId, fileName, base64);
+  assets.set(assetPath, decoded.canvas);
+  store.addImage({
+    assetPath,
+    naturalWidth: decoded.originalWidth,
+    naturalHeight: decoded.originalHeight,
+    name,
+  });
+  store.setTool('select');
+  await saveCurrentProject({ silent: true });
+  return true;
+}
+

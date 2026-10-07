@@ -23,7 +23,7 @@ export interface PickedImage {
 
 
 export async function pickImagesFromGallery(options: { maxImages?: number } = {}): Promise<PickedImage[]> {
-  const maxImages = Math.max(1, Math.min(options.maxImages ?? 1, 10));
+  const maxImages = Math.max(1, Math.min(options.maxImages ?? 1, 30));
 
   if (Capacitor.isNativePlatform()) {
     try {

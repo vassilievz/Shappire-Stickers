@@ -27,6 +27,24 @@ export interface MaskStroke {
   points: number[];
 }
 
+export interface ImageFilters {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  grayscale: boolean;
+  sepia: boolean;
+  invert: boolean;
+}
+
+export const DEFAULT_IMAGE_FILTERS: ImageFilters = {
+  brightness: 0,
+  contrast: 0,
+  saturation: 0,
+  grayscale: false,
+  sepia: false,
+  invert: false,
+};
+
 export interface ImageElement {
   kind: 'image';
   id: string;
@@ -46,6 +64,7 @@ export interface ImageElement {
   opacity: number;
   stroke: StrokeStyle;
   maskStrokes: MaskStroke[];
+  filters?: ImageFilters;
 }
 
 export interface TextElement {
@@ -147,6 +166,7 @@ export function createImageElement(input: CreateImageElementInput): ImageElement
     opacity: 1,
     stroke: { enabled: false, color: '#FFFFFF', width: 0 },
     maskStrokes: [],
+    filters: { ...DEFAULT_IMAGE_FILTERS },
   };
 }
 

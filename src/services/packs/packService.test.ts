@@ -131,6 +131,17 @@ describe('addStickerToPack', () => {
       code: 'PACK_TOO_MANY_STICKERS',
     });
   });
+
+  it('bloqueia figurinha animada em pacote estático existente', async () => {
+    const { pack } = await createPack({ name: 'Estático' });
+    await addStickerToPack({ packId: pack.id, artwork: artwork(), isAnimated: false });
+
+    await expect(
+      addStickerToPack({ packId: pack.id, artwork: artwork(), isAnimated: true }),
+    ).rejects.toMatchObject({
+      code: 'PACK_MIXED_TYPES',
+    });
+  });
 });
 
 describe('removeStickerFromPack', () => {
@@ -141,6 +152,29 @@ describe('removeStickerFromPack', () => {
     const updated = await removeStickerFromPack(pack.id, sticker.id);
     expect(updated.stickers).toHaveLength(0);
     expect(await getFileSystemGateway().exists(packStickerPath(pack.id, sticker.fileName))).toBe(false);
+  });
+
+  it('restaura tipo estático quando a única figurinha animada for removida', async () => {
+    const { pack } = await createPack({ name: 'Misto Teste' });
+    const s1 = (await addStickerToPack({ packId: pack.id, artwork: artwork(), isAnimated: false })).sticker;
+    // Simular pacote que tinha virado 'animated' por conta de um GIF adicionado anteriormente
+    const { savePacks, loadPacks } = await import('@/services/storage/packRepository');
+    const existing = await loadPacks();
+    const s2Fake: typeof s1 = {
+      ...s1,
+      id: 'stk_fake_gif',
+      fileName: 'sticker_02.webp',
+      isAnimated: true,
+    };
+    const mixedPack = {
+      ...existing[0]!,
+      stickerType: 'animated' as const,
+      stickers: [existing[0]!.stickers[0]!, s2Fake],
+    };
+    await savePacks([mixedPack]);
+
+    const updated = await removeStickerFromPack(pack.id, 'stk_fake_gif');
+    expect(updated.stickerType).toBe('static');
   });
 });
 

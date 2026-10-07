@@ -3,19 +3,29 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
+  Download,
   ImagePlus,
+  Images,
   Info,
   MessageCircle,
   Pencil,
   Plus,
   RefreshCw,
   Share2,
+  Sparkles,
 } from 'lucide-react';
 import { Badge, Button, EmptyState, SectionTitle } from '@/shared/components/primitives';
 import { BottomSheet, ConfirmDialog, Modal } from '@/shared/components/overlays';
 import { TextInput } from '@/shared/components/inputs';
 import { WHATSAPP_LIMITS } from '@/config/whatsapp';
 import { STICKER_AUTHOR, type StickerRecord } from '@/domain/stickerPack';
+import {
+  DEFAULT_AUTHOR_DISPLAY_NAME,
+  INSTAGRAM_LABEL,
+  INSTAGRAM_HANDLE,
+  INSTAGRAM_PROFILE_URL,
+} from '@/config/attribution';
+import { openExternalLink } from '@/services/native/externalLinks';
 import {
   validateMetadataText,
   validateStickerPack,
@@ -37,16 +47,20 @@ import {
   validatePackForWhatsApp,
   type WhatsAppCapabilities,
 } from '@/services/whatsapp/whatsappService';
-import { pickSingleImage } from '@/services/native/imagePicker';
+import { pickImagesFromGallery, pickSingleImage } from '@/services/native/imagePicker';
 import { shareStickerFile } from '@/services/native/shareService';
 import { packStickerPath } from '@/services/storage/paths';
+import { downloadPackZip } from '@/services/packs/packBackupService';
+import { hapticNotification } from '@/services/native/haptics';
 import { friendlyMessage } from '@/shared/errors';
 import { formatBytes, formatRelative } from '@/shared/utils/format';
 import { useLibraryStore } from '@/state/libraryStore';
 import { showToast } from '@/state/toastStore';
 import { useEditorStore } from '@/features/editor/store/editorStore';
+import { useSettingsStore } from '@/state/settingsStore';
 import { cx } from '@/shared/utils/cx';
 import { StickerPreview } from './StickerPreview';
+import { BlurFade } from '@/shared/components/motion';
 
 type SheetAction = 'none' | 'sticker' | 'add';
 
@@ -54,7 +68,7 @@ export function PackDetailPage() {
   const { t } = useTranslation();
   const { packId = '' } = useParams();
   const navigate = useNavigate();
-
+  const authorDisplayName = useSettingsStore((state) => state.settings.authorDisplayName);
   const pack = useLibraryStore((state) => state.packs.find((item) => item.id === packId));
   const refresh = useLibraryStore((state) => state.refresh);
 
@@ -138,12 +152,63 @@ export function PackDetailPage() {
         accessibilityText: image.fileName,
       });
       await refresh();
+      void hapticNotification('success');
       showToast('Figurinha importada para o pacote.', 'success');
     } catch (error) {
       showToast(friendlyMessage(error), 'error');
     } finally {
       setBusy(false);
       setSheet('none');
+    }
+  };
+
+  const handleBatchImport = async () => {
+    const remainingSlots = WHATSAPP_LIMITS.MAX_STICKERS_PER_PACK - pack.stickers.length;
+    if (remainingSlots <= 0) {
+      showToast(t('packDetail.fullPack'), 'warning');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const images = await pickImagesFromGallery({ maxImages: remainingSlots });
+      if (images.length === 0) return;
+
+      let importedCount = 0;
+      for (const img of images) {
+        try {
+          await addExistingImageToPack({
+            packId: pack.id,
+            dataUrl: img.dataUrl,
+            accessibilityText: img.fileName,
+          });
+          importedCount++;
+        } catch (itemErr) {
+          console.warn('Erro ao importar imagem individual do lote:', itemErr);
+        }
+      }
+
+      await refresh();
+      void hapticNotification('success');
+      showToast(t('packDetail.batchImportSuccess', { count: importedCount }), 'success');
+    } catch (error) {
+      showToast(friendlyMessage(error), 'error');
+    } finally {
+      setBusy(false);
+      setSheet('none');
+    }
+  };
+
+  const handleExportZip = async () => {
+    setBusy(true);
+    try {
+      await downloadPackZip(pack.id);
+      void hapticNotification('success');
+      showToast(t('packDetail.exportZipSuccess'), 'success');
+    } catch (error) {
+      showToast(friendlyMessage(error), 'error');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -374,11 +439,55 @@ export function PackDetailPage() {
         onClose={() => setSheet('none')}
       >
         {activeSticker ? (
-          <div className="flex flex-col gap-2 pb-2">
-            <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[11px] text-ink-muted">
-              <span>{t('packDetail.creatorCreditLabel')}</span>
-              <span className="font-medium text-ink select-all">{STICKER_AUTHOR}</span>
+          <div className="flex flex-col gap-4 pb-2">
+            {/* Pré-visualização grande e limpa — nenhum texto sobre a imagem. */}
+            <BlurFade durationMs={260} className="flex justify-center">
+              <div
+                className={cx(
+                  'checkerboard relative w-full max-w-[240px] overflow-hidden rounded-[18px] border border-line bg-surface-2/40 shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
+                  !activeSticker.isAnimated && 'animate-blur-fade',
+                )}
+              >
+                <StickerPreview
+                  packId={pack.id}
+                  fileName={activeSticker.fileName}
+                  isAnimated={activeSticker.isAnimated}
+                  className="aspect-square size-full object-contain"
+                />
+              </div>
+            </BlurFade>
+
+            {/* Atribuição de autoria — ABAIXO da figurinha, nunca dentro da imagem. */}
+            <div className="flex flex-col items-center gap-2.5 pb-1 text-center">
+              <p className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] text-ink-soft">
+                <span className="font-medium text-ink">{authorDisplayName.trim() || DEFAULT_AUTHOR_DISPLAY_NAME}</span>
+                <span aria-hidden className="text-ink-muted">·</span>
+                <span className="text-ink-muted">{INSTAGRAM_LABEL}</span>
+                <span aria-hidden className="text-ink-muted">·</span>
+                <a
+                  href={INSTAGRAM_PROFILE_URL}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openExternalLink(INSTAGRAM_PROFILE_URL);
+                  }}
+                  className="group inline-flex min-h-[32px] items-center rounded-[8px] px-1.5 -mx-1.5 font-medium text-ink underline-offset-4 transition-colors hover:text-focus hover:underline focus-visible:outline-2 active:scale-[0.97] touch-manipulation"
+                >
+                  {INSTAGRAM_HANDLE}
+                </a>
+              </p>
+              {activeSticker.isAnimated ? (
+                <p className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                  <Sparkles className="size-3" aria-hidden />
+                  {t('packDetail.animatedInfo')} · {' '}
+                  {activeSticker.durationMs ? `${(activeSticker.durationMs / 1000).toFixed(1)}s` : 'GIF'}
+                </p>
+              ) : null}
             </div>
+
+            <div className="h-px bg-line/60" aria-hidden />
+
             <ul className="flex flex-col gap-1">
               <SheetActionRow
                 label={t('packDetail.useAsTray')}
@@ -441,6 +550,15 @@ export function PackDetailPage() {
           >
             {t('packDetail.importFromGallery')}
           </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            icon={<Images className="size-4" aria-hidden />}
+            onClick={() => void handleBatchImport()}
+            loading={busy}
+          >
+            {t('packDetail.batchImport')}
+          </Button>
         </div>
       </BottomSheet>
 
@@ -449,7 +567,7 @@ export function PackDetailPage() {
           type="button"
           aria-label={t('common.back')}
           onClick={() => void navigate('/pacotes')}
-          className="flex size-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2"
+          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
         >
           <ArrowLeft className="size-5" aria-hidden />
         </button>
@@ -463,40 +581,51 @@ export function PackDetailPage() {
         </div>
         <button
           type="button"
+          aria-label={t('packDetail.exportZip')}
+          onClick={() => void handleExportZip()}
+          title={t('packDetail.exportZip')}
+          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
+        >
+          <Download className="size-4" aria-hidden />
+        </button>
+        <button
+          type="button"
           aria-label={t('packDetail.editPackTitle')}
           onClick={openRename}
-          className="flex size-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2"
+          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
         >
           <Pencil className="size-4" aria-hidden />
         </button>
       </header>
 
-      <section className="flex items-center gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4">
-        <span className="checkerboard size-16 shrink-0 overflow-hidden rounded-[12px] border border-line">
-          {pack.trayImage ? (
-            <StickerPreview
-              packId={pack.id}
-              fileName={pack.trayImage.fileName}
-              className="size-full object-contain"
-            />
-          ) : null}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+      <BlurFade durationMs={280} delayMs={60}>
+        <section className="flex items-center gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+            <span className="checkerboard size-16 shrink-0 overflow-hidden rounded-[12px] border border-line">
+            {pack.trayImage ? (
+              <StickerPreview
+                packId={pack.id}
+                fileName={pack.trayImage.fileName}
+                className="size-full object-contain"
+              />
+            ) : null}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{t('packDetail.stickersBadge', { count: pack.stickers.length })}</Badge>
             {pack.stickerType === 'animated' ? <Badge tone="neutral">{t('packDetail.animatedBadge')}</Badge> : null}
             <Badge tone="neutral">v{pack.imageDataVersion}</Badge>
-            <Badge tone={packReady ? 'success' : 'warning'}>
-              {packReady ? t('packDetail.readyToSend') : t('packDetail.pending')}
-            </Badge>
+              <Badge tone={packReady ? 'success' : 'warning'}>
+                {packReady ? t('packDetail.readyToSend') : t('packDetail.pending')}
+              </Badge>
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
+              {packReady
+                ? t('packDetail.meetsRequirements')
+                : (rulesValidation?.errors[0]?.message ?? t('packDetail.pending'))}
+            </p>
           </div>
-          <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-            {packReady
-              ? t('packDetail.meetsRequirements')
-              : (rulesValidation?.errors[0]?.message ?? t('packDetail.pending'))}
-          </p>
-        </div>
-      </section>
+        </section>
+      </BlurFade>
 
       <section className="flex flex-col gap-3">
         <SectionTitle
@@ -550,18 +679,20 @@ export function PackDetailPage() {
             variant="secondary"
             onClick={() => void handleValidate()}
             loading={busy}
-            icon={<RefreshCw className="size-4" aria-hidden />}
+            icon={<RefreshCw className="size-4 shrink-0" aria-hidden />}
+            className="min-w-0"
           >
-            {t('packDetail.verify')}
+            <span className="truncate">{t('packDetail.verify')}</span>
           </Button>
           <Button
             variant="primary"
             onClick={() => void handleAddToWhatsApp()}
             loading={busy}
             disabled={!packReady || (capabilities !== null && !whatsappInstalled)}
-            icon={<Share2 className="size-4" aria-hidden />}
+            icon={<Share2 className="size-4 shrink-0" aria-hidden />}
+            className="min-w-0"
           >
-            {t('packDetail.add')}
+            <span className="truncate">{t('packDetail.add')}</span>
           </Button>
         </div>
         {!packReady ? (
@@ -595,7 +726,7 @@ export function PackDetailPage() {
             }
           />
         ) : (
-          <ul className="grid grid-cols-3 gap-2.5">
+          <ul className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 sm:gap-3.5">
             {pack.stickers.map((sticker, index) => (
               <li key={sticker.id} className="relative">
                 <button
@@ -604,15 +735,20 @@ export function PackDetailPage() {
                     setActiveSticker(sticker);
                     setSheet('sticker');
                   }}
-                  className="group block w-full text-left"
+                  className="group block w-full text-left touch-manipulation transition-transform duration-150 active:scale-[0.96]"
                 >
-                  <span className="checkerboard block aspect-square w-full overflow-hidden rounded-[12px] border border-line transition-colors group-hover:border-focus/50">
+                  <span className="checkerboard relative block aspect-square w-full overflow-hidden rounded-[12px] border border-line transition-[border-color,transform] duration-150 group-hover:border-focus/40 group-hover:scale-[1.02]">
                     <StickerPreview
                       packId={pack.id}
                       fileName={sticker.fileName}
                       isAnimated={sticker.isAnimated}
                       className="size-full object-contain"
                     />
+                    {sticker.isAnimated ? (
+                      <span className="absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-bold text-white shadow-sm">
+                        GIF
+                      </span>
+                    ) : null}
                   </span>
                   <span className="mt-1 block text-center text-[11px] tabular-nums text-ink-muted">
                     {index + 1} · {formatBytes(sticker.sizeBytes)}
@@ -623,6 +759,7 @@ export function PackDetailPage() {
           </ul>
         )}
       </section>
+
     </div>
   );
 }
@@ -642,7 +779,7 @@ function SheetActionRow({
         type="button"
         onClick={onClick}
         className={cx(
-          'w-full rounded-[12px] px-3 py-3.5 text-left text-[14px] transition-colors',
+          'flex min-h-[44px] w-full items-center rounded-[12px] px-3 py-3 text-left text-[14px] transition-colors touch-manipulation',
           tone === 'danger'
             ? 'text-danger hover:bg-danger/10 active:bg-danger/15'
             : 'text-ink hover:bg-surface-2 active:bg-surface-3',

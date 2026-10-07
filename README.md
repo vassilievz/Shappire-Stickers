@@ -4,7 +4,7 @@
 
 Built with React, TypeScript, Capacitor, and native Android components, it provides a complete sticker creation workflow with a powerful editor, local storage, and native WhatsApp integration.
 
-> **Project Status:** `v0.1.0` — First functional release. Core editing, local persistence, sticker pack management, and WebP export are implemented and tested. Native WhatsApp integration has been compiled but still requires validation on a physical Android device.
+> **Project Status:** `v0.2.0` — Monochromatic visual refinement, custom sticker signature system, splash transition, responsive layouts, and full offline-first Android workflow.
 
 ## Features
 
