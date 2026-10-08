@@ -292,6 +292,9 @@ export async function addImageFromDataUrlToCanvas(
   name = t('editor.layersPanel.defaultElementName'),
 ): Promise<boolean> {
   const store = useEditorStore.getState();
+  if (!store.projectId) {
+    store.openNewProject();
+  }
   const projectId = store.projectId;
   if (!projectId) return false;
 
