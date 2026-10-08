@@ -4,9 +4,9 @@
 
 Built with React, TypeScript, Capacitor, and native Android components, it provides a complete sticker creation workflow — a powerful editor, local storage, and native WhatsApp integration — without requiring an account or an internet connection.
 
-> **No login required.** Creating, editing, exporting, and installing sticker packs works 100% offline. The app needs no account, no Google login, no backend connection, and no internet access for its core functionality.
+> **No login required.** The app can be used normally without creating an account or signing in — authentication is needed only for the optional online profile features. Creating, editing, importing images, managing packs, exporting, and using the editor all work 100% offline: no account, no Google login, no backend connection, and no internet access are required for the core functionality.
 
-The optional profile system (display name, username, bio, avatar, banner) is a separate, non-essential feature for users who want a Shappire profile. Sticker creation never depends on it.
+The optional account/profile system (display name, username, bio, avatar, banner) is a separate, non-essential feature for users who want a Shappire online profile. Signing in is required only for these online profile features — sticker creation never depends on them.
 
 > **Project Status:** `v0.2.1` — npm-workspaces monorepo (`apps/app`, `apps/api`, `packages/contracts`). The Android application is fully offline-first; the optional profile backend is now part of this public repository and is not required to build or use the app.
 
@@ -32,23 +32,23 @@ Shappire Stickers is organized as an npm-workspaces monorepo:
 ```text
 packages/contracts        Shared limits, routes and error codes (single source of truth)
 apps/app                  React + Capacitor Android app (offline-first)
-apps/api                  Optional profile backend (open source — not required by the app)
+apps/api                  Public API of the project (optional — not required by the app)
 ```
 
-### Optional Profile Backend
+### Public Backend (Optional)
 
-The optional profile backend lives in `apps/api` and is now **part of this public repository**, included primarily for transparency, auditability, contribution, and reproducibility of the online profile infrastructure. It is not required by the core application and is responsible only for a small set of optional account/profile services.
+The backend API lives in `apps/api` and is now **publicly available in this repository**, included primarily for transparency, auditability, contribution, and reproducibility of the online profile infrastructure. It is an optional online layer — not required by the core application or by the editor — and it is responsible only for a small set of online account/profile services: user profile data and the metadata related to these online features.
 
 Using the backend is entirely optional and separate from the main functionality: the app can be used without creating an account and without providing any data. Its responsibilities are limited to:
 
-- Storage of basic optional profile information — display name, username, bio, avatar, and banner.
+- Persistent storage of basic optional profile data in MongoDB — display name, username, bio, avatar, and banner.
 - Image metadata for profile pictures.
-- V0X integration for hosting profile images.
-- Optional Firebase Authentication for account/profile usage.
+- V0X integration for media storage — hosting of profile images.
+- Firebase Authentication for optional account/profile login.
 
 The backend stores only minimal data. Profile images are hosted externally through V0X; MongoDB keeps only their metadata. The backend does **not** store sticker projects, sticker packs, edited stickers, edit files, editor data, or any other core application content — none of the user's projects, edits, packs, or main content is sent to the backend. All sticker content remains exclusively on the device.
 
-Production credentials are never committed: they remain outside Git and are supplied exclusively through environment variables (`apps/api/.env`, which is gitignored; a documented `.env.example` is provided). See `apps/api/README.md` for setup details.
+Publishing the backend does not mean publishing credentials: production secrets are never committed and are supplied exclusively through environment variables. `apps/api/.env` is gitignored, and the provided `apps/api/.env.example` contains only placeholders and sample configuration. See `apps/api/README.md` for setup details.
 
 ```text
 apps/app (Android) ── Firebase ID token ──> apps/api (optional)
@@ -58,7 +58,7 @@ apps/app (Android) ── Firebase ID token ──> apps/api (optional)
 
 - The app communicates with the Shappire API (`VITE_API_URL`) only for optional profile actions, authenticating with a Firebase ID token. It never sees the V0X key, MongoDB credentials, or Firebase Admin credentials — those live only on the backend.
 - `packages/contracts` keeps username rules, image limits, routes, and error codes in sync between app and API.
-- Sticker creation, editing, and export remain fully offline. Only optional profile actions require connectivity.
+- Sticker creation, editing, image import, pack management, and export remain fully offline. Only the optional online profile actions require connectivity.
 
 ## Authentication
 
@@ -67,7 +67,7 @@ apps/app (Android) ── Firebase ID token ──> apps/api (optional)
 | Core application | 100% offline — no mandatory login |
 | Optional profile services | Firebase Authentication (Google Login) + Shappire API |
 
-The core sticker workflow — creation, editing, export, and pack installation — never depends on authentication, connectivity, or the backend.
+The core sticker workflow — creation, editing, export, and pack installation — never depends on authentication, connectivity, or the backend. An account is optional and exists only for the online profile features; the app is fully usable without creating one.
 
 ## Features
 
@@ -295,7 +295,7 @@ Ensure that `JAVA_HOME` and the Android SDK environment are correctly configured
 │   │       ├── shared/          # Reusable components and utilities
 │   │       ├── state/           # Application state (auth, profile, library)
 │   │       └── styles/          # Design tokens and global styles
-│   └── api/                     # Optional profile backend (open source — not required by the app)
+│   └── api/                     # Public API of the project (optional — not required by the app)
 ├── packages/
 │   └── contracts/               # Shared limits, routes and error codes (app ↔ API)
 ├── package.json                 # npm workspaces root
@@ -324,7 +324,7 @@ The native implementation has been compiled successfully. Real-device validation
 - Only locally available fonts are used to maintain offline compatibility.
 - Extremely small or heavily resized text elements may exhibit minor rendering quality loss.
 - The `avoid_cache` field is retained for compatibility, although newer WhatsApp versions may ignore it.
-- There is no cloud synchronization or public sticker marketplace. Profile features are optional and limited to basic profile data — sticker content is never stored on the backend.
+- Online authentication and profile features are optional. There is no cloud synchronization of editor projects or sticker packs, and no public sticker marketplace. Sticker content is never stored on the backend.
 
 ## Contributing
 
