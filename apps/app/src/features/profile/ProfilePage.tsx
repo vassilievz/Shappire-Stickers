@@ -1,0 +1,241 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { ImageOff, Pencil, UserRound } from 'lucide-react';
+import { Button, Card, EmptyState, Spinner } from '@/shared/components/primitives';
+import { BlurFade } from '@/shared/components/motion';
+import { cx } from '@/shared/utils/cx';
+import { useTranslation } from '@/i18n';
+import { useAuthStore } from '@/state/authStore';
+import { useProfileStats, useProfileStore } from '@/state/profileStore';
+import { EditProfileSheet } from './EditProfileSheet';
+import { formatDate } from '@/shared/utils/format';
+
+function AvatarMedia({ src, className }: { src: string | null; className?: string }) {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+
+  if (!src || failed) {
+    return (
+      <div
+        className={cx(
+          'flex items-center justify-center border-4 border-app bg-surface-2 text-ink-muted',
+          className,
+        )}
+      >
+        <UserRound className="size-9" aria-hidden />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={t('profile.edit.avatarLabel')}
+      className={cx('border-4 border-app bg-surface-2 object-cover', className)}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function BannerMedia({ src }: { src: string | null }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+
+  if (!src || failed) {
+    return (
+      <div className="h-full w-full bg-gradient-to-br from-surface-3 via-surface-2 to-surface-3">
+        <div className="flex size-full items-center justify-center text-ink-muted/40">
+          <ImageOff className="size-5" aria-hidden />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+  );
+}
+
+function StatCell({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex min-w-0 flex-col items-center gap-0.5 px-2 py-3 text-center">
+      <span className="text-[17px] font-semibold tabular-nums leading-none text-ink">{value}</span>
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-hidden>
+      <div className="h-36 animate-pulse rounded-[var(--radius-card)] border border-line bg-surface" />
+      <div className="flex items-center gap-4">
+        <div className="-mt-12 size-24 animate-pulse rounded-full border-4 border-app bg-surface" />
+        <div className="flex flex-col gap-2">
+          <div className="h-5 w-40 animate-pulse rounded-full bg-surface" />
+          <div className="h-3.5 w-24 animate-pulse rounded-full bg-surface" />
+        </div>
+      </div>
+      <div className="h-16 animate-pulse rounded-[var(--radius-card)] border border-line bg-surface" />
+    </div>
+  );
+}
+
+export function ProfilePage() {
+  const { t } = useTranslation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isSigningIn = useAuthStore((state) => state.isSigningIn);
+  const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
+
+  const profile = useProfileStore((state) => state.profile);
+  const status = useProfileStore((state) => state.status);
+  const hydrate = useProfileStore((state) => state.hydrate);
+  const stats = useProfileStats();
+
+  const [editOpen, setEditOpen] = useState(false);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50dvh] items-center justify-center">
+        <Spinner className="size-6 text-ink-muted" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-[60dvh] items-center justify-center">
+        <EmptyState
+          icon={<UserRound className="size-6" aria-hidden />}
+          title={t('profile.signedOut.title')}
+          description={t('profile.signedOut.description')}
+          action={
+            <Button
+              variant="primary"
+              fullWidth
+              loading={isSigningIn}
+              onClick={() => void signInWithGoogle()}
+            >
+              {t('profile.signedOut.signIn')}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    if (status === 'error') {
+      return (
+        <div className="flex min-h-[60dvh] items-center justify-center">
+          <EmptyState
+            icon={<UserRound className="size-6" aria-hidden />}
+            title={t('profile.signedOut.title')}
+            description={t('errors.NETWORK_ERROR')}
+            action={
+              <Button variant="secondary" fullWidth onClick={() => void hydrate()}>
+                {t('common.retry')}
+              </Button>
+            }
+          />
+        </div>
+      );
+    }
+    return <ProfileSkeleton />;
+  }
+
+  const isIncomplete = !profile.username && !profile.bio && !profile.avatar;
+  const avatarSrc = profile.avatar?.url ?? profile.photoURL;
+
+  const actions: ReactNode = (
+    <Button
+      variant={isIncomplete ? 'primary' : 'secondary'}
+      size="sm"
+      onClick={() => setEditOpen(true)}
+      icon={<Pencil className="size-3.5" aria-hidden />}
+    >
+      {t('profile.editProfile')}
+    </Button>
+  );
+
+  return (
+    <div className="flex flex-col gap-6 pb-4">
+      <BlurFade delayMs={0} durationMs={320}>
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+              {t('profile.title')}
+            </h1>
+            <p className="mt-1 max-w-[36ch] text-[14px] leading-relaxed text-ink-muted">
+              {t('profile.subtitle')}
+            </p>
+          </div>
+          <div className="shrink-0">{actions}</div>
+        </header>
+      </BlurFade>
+
+      {isIncomplete ? (
+        <BlurFade delayMs={80} durationMs={320}>
+          <EmptyState
+            icon={<UserRound className="size-6" aria-hidden />}
+            title={t('profile.completeProfile')}
+            description={t('profile.completeProfileDesc')}
+            action={
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => setEditOpen(true)}
+                icon={<Pencil className="size-4" aria-hidden />}
+              >
+                {t('profile.editProfile')}
+              </Button>
+            }
+          />
+        </BlurFade>
+      ) : null}
+
+      <BlurFade delayMs={isIncomplete ? 140 : 80} durationMs={320}>
+        <Card className="overflow-hidden">
+          <div className="h-36 w-full border-b border-line">
+            <BannerMedia src={profile.banner?.url ?? null} />
+          </div>
+
+          <div className="relative px-5 pb-5">
+            <div className="-mt-12 mb-3">
+              <AvatarMedia src={avatarSrc} className="size-24 rounded-full text-ink-muted" />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <h2 className="truncate text-[19px] font-semibold tracking-[-0.01em] text-ink">
+                {profile.displayName}
+              </h2>
+              {profile.username ? (
+                <p className="text-[13px] font-medium text-ink-muted">@{profile.username}</p>
+              ) : null}
+              {profile.bio ? (
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-soft">{profile.bio}</p>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 divide-x divide-line rounded-[14px] border border-line bg-surface-2/60">
+              <StatCell value={String(stats.packs)} label={t('profile.stats.packs')} />
+              <StatCell value={String(stats.stickers)} label={t('profile.stats.stickers')} />
+            </div>
+            {profile.createdAt ? (
+              <p className="mt-2.5 text-center text-[12px] font-medium text-ink-muted">
+                {t('profile.stats.memberSince', { date: formatDate(profile.createdAt) })}
+              </p>
+            ) : null}
+          </div>
+        </Card>
+      </BlurFade>
+
+      <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />
+    </div>
+  );
+}

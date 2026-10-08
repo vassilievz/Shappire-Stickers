@@ -1,10 +1,30 @@
 # Shappire Stickers
 
-**Shappire Stickers** is an offline-first Android application for creating, editing, and managing custom WhatsApp sticker packs.
+**Shappire Stickers** is an offline-first Android application for creating, editing, and managing custom WhatsApp sticker packs, backed by a custom profile API.
 
-Built with React, TypeScript, Capacitor, and native Android components, it provides a complete sticker creation workflow with a powerful editor, local storage, and native WhatsApp integration.
+Built with React, TypeScript, Capacitor, and native Android components, it provides a complete sticker creation workflow with a powerful editor, local storage, and native WhatsApp integration. User profiles (display name, username, bio, avatar, banner) are managed by the Shappire API with MongoDB and V0X file hosting.
 
-> **Project Status:** `v0.2.0` — Monochromatic visual refinement, custom sticker signature system, splash transition, responsive layouts, and full offline-first Android workflow.
+> **Project Status:** `v0.2.1` — npm-workspaces monorepo (`apps/app`, `apps/api`, `packages/contracts`), profile system served by a custom Express + MongoDB API, Firebase Auth (Google Login), and V0X image hosting.
+
+## Monorepo Architecture
+
+```text
+packages/contracts        Shared limits, routes and error codes (single source of truth)
+apps/app                  React + Capacitor Android app (offline-first)
+apps/api                  Express API: MongoDB profiles + V0X image hosting
+```
+
+```text
+apps/app (Android) ── Firebase ID token ──> apps/api
+                                             ├── MongoDB (profile + image metadata)
+                                             └── V0X (files → public CDN URL)
+```
+
+- The app talks only to the Shappire API (`VITE_API_URL`) with a Firebase ID token. It never sees the V0X key, MongoDB credentials, or Firebase Admin credentials — those live only in `apps/api/.env` (gitignored).
+- `packages/contracts` keeps username rules, image limits, routes, and error codes in sync between app and API.
+- Sticker creation, editing, and export remain fully offline. Only profile actions require connectivity.
+
+See `apps/api/README.md` for API setup (`.env.example`, endpoints, tests).
 
 ## Features
 
@@ -58,11 +78,11 @@ Built with React, TypeScript, Capacitor, and native Android components, it provi
 
 ### Privacy and Offline Support
 
-* No backend or external services.
-* No accounts, authentication, or cloud synchronization.
+* Sticker creation, editing, and export work fully offline; projects and stickers are stored locally.
+* Online services are used only for the user profile (Google Login via Firebase Auth, profile data via the Shappire API).
+* Profile images are hosted on V0X; the database stores only metadata — no image binaries.
+* Offline profile edits are blocked with a clear message; the last known profile is cached locally.
 * No telemetry or external tracking.
-* All projects and generated stickers are stored locally.
-* No internet connection required during normal application usage.
 
 ## Technology Stack
 
@@ -80,6 +100,10 @@ Built with React, TypeScript, Capacitor, and native Android components, it provi
 | Icons              | Lucide React              |
 | Testing            | Vitest 5, Testing Library |
 | Navigation         | React Router              |
+| API                | Node.js 20+, Express 5, JavaScript (ESM) |
+| Database           | MongoDB (Mongoose 8)      |
+| Auth               | Firebase Auth + Admin SDK |
+| File Hosting       | V0X API                   |
 
 ## Requirements
 
@@ -90,11 +114,13 @@ Built with React, TypeScript, Capacitor, and native Android components, it provi
 * Android SDK 36
 * Android Gradle Plugin 8.13.0
 
-Internet access is required for installing dependencies and downloading Gradle components. The application itself is designed to work offline.
+To run the API locally: a MongoDB database (Atlas or local), a Firebase service account (Admin SDK), and a V0X API key. See `apps/api/README.md`.
+
+Internet access is required for installing dependencies and downloading Gradle components. Sticker editing works offline; profile actions require connectivity.
 
 ## Getting Started
 
-Clone the repository and install dependencies:
+Clone the repository and install dependencies for the whole monorepo:
 
 ```bash
 git clone https://github.com/vassilievz/shappire-stickers.git
@@ -104,10 +130,16 @@ npm install
 
 ### Development
 
-Start the local development server:
+Start the app dev server:
 
 ```bash
-npm run dev
+npm run app:dev
+```
+
+Start the API (requires `apps/api/.env` — see `apps/api/README.md`):
+
+```bash
+npm run dev -w apps/api
 ```
 
 Build the production frontend:
@@ -116,24 +148,15 @@ Build the production frontend:
 npm run build
 ```
 
-Preview the production build:
-
-```bash
-npm run preview
-```
-
 ### Quality Checks
 
-Run the available validation commands:
+Run validation across all workspaces:
 
 ```bash
 npm run typecheck
 npm run lint
 npm test
-npm run check
 ```
-
-The `check` command runs TypeScript validation, tests, and the production build.
 
 ## Android Build
 
@@ -141,12 +164,6 @@ Synchronize the web application with the native Android project:
 
 ```bash
 npm run cap:sync
-```
-
-Open the Android project:
-
-```bash
-npm run cap:open
 ```
 
 To generate a debug APK on Windows:
@@ -158,7 +175,7 @@ npm run android:debug
 Alternatively, build directly using Gradle:
 
 ```bash
-cd android
+cd apps/app/android
 gradlew.bat assembleDebug
 ```
 
@@ -171,7 +188,7 @@ On macOS or Linux:
 The generated APK is located at:
 
 ```text
-android/app/build/outputs/apk/debug/app-debug.apk
+apps/app/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Ensure that `JAVA_HOME` and the Android SDK environment are correctly configured before building.
@@ -180,29 +197,45 @@ Ensure that `JAVA_HOME` and the Android SDK environment are correctly configured
 
 ```text
 .
-├── android/                 # Native Android project
-├── docs/                    # Architecture and testing documentation
-├── src/
-│   ├── app/                 # Application shell and navigation
-│   ├── config/              # Centralized application configuration
-│   ├── domain/               # Core domain models and validation
-│   ├── features/
-│   │   ├── editor/           # Sticker editor
-│   │   ├── home/             # Home screen
-│   │   ├── packs/             # Sticker pack management
-│   │   └── settings/          # Settings and licenses
-│   ├── services/
-│   │   ├── imaging/          # Image processing and export
-│   │   ├── native/           # Native Android bridges
-│   │   ├── packs/             # Pack operations
-│   │   ├── storage/           # Local persistence
-│   │   └── whatsapp/          # WhatsApp integration
-│   ├── shared/                # Reusable components and utilities
-│   ├── state/                 # Application state
-│   ├── styles/                # Design tokens and global styles
-│   └── types/                 # Type declarations
+├── apps/
+│   ├── app/                     # React + Capacitor Android app
+│   │   ├── android/             # Native Android project
+│   │   └── src/
+│   │       ├── app/             # Application shell and navigation
+│   │       ├── config/          # Centralized application configuration
+│   │       ├── domain/          # Core domain models and validation
+│   │       ├── features/
+│   │       │   ├── editor/      # Sticker editor
+│   │       │   ├── home/        # Home screen
+│   │       │   ├── packs/       # Sticker pack management
+│   │       │   ├── profile/     # Profile editing
+│   │       │   └── settings/    # Settings and licenses
+│   │       ├── services/
+│   │       │   ├── api/         # Shappire API HTTP client (profile)
+│   │       │   ├── firebase/    # Firebase Auth + Analytics (client)
+│   │       │   ├── imaging/     # Image processing and export
+│   │       │   ├── native/      # Native Android bridges
+│   │       │   ├── ota/         # OtaKit updates
+│   │       │   ├── packs/       # Pack operations
+│   │       │   ├── profile/     # Profile orchestration (upload + save)
+│   │       │   ├── storage/     # Local persistence
+│   │       │   └── whatsapp/    # WhatsApp integration
+│   │       ├── shared/          # Reusable components and utilities
+│   │       ├── state/           # Application state (auth, profile, library)
+│   │       ├── styles/          # Design tokens and global styles
+│   │       └── i18n/            # Localization (pt-BR, en, es, de, it, hi)
+│   └── api/                     # Express API (MongoDB + Firebase Admin + V0X)
+│       └── src/
+│           ├── config/          # env, MongoDB, Firebase Admin, V0X
+│           ├── middleware/       # requireAuth, upload, rate limit, errors
+│           ├── models/          # Mongoose User model
+│           ├── routes/          # /health, /api/profile(+avatar/banner)
+│           ├── services/        # userService, profileService, v0xService
+│           └── utils/           # magic bytes, ApiError
+├── packages/
+│   └── contracts/               # Shared limits, routes, error codes (app ↔ API)
 ├── capacitor.config.ts
-├── package.json
+├── package.json                 # npm workspaces root
 └── README.md
 ```
 

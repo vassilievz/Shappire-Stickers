@@ -4,20 +4,21 @@ node_modules/
 # Build do frontend
 dist/
 dist-ssr/
+build/
 *.local
 
 # Capacitor / Android
-android/.gradle/
-android/build/
-android/app/build/
-android/app/release/
-android/local.properties
-android/.idea/
-android/captures/
-android/app/src/main/assets/public/
-android/app/src/main/assets/capacitor.config.json
-android/app/src/main/assets/capacitor.plugins.json
-android/app/src/main/res/xml/config.xml
+apps/app/android/.gradle/
+apps/app/android/build/
+apps/app/android/app/build/
+apps/app/android/app/release/
+apps/app/android/local.properties
+apps/app/android/.idea/
+apps/app/android/captures/
+apps/app/android/app/src/main/assets/public/
+apps/app/android/app/src/main/assets/capacitor.config.json
+apps/app/android/app/src/main/assets/capacitor.plugins.json
+apps/app/android/app/src/main/res/xml/config.xml
 
 # Editores
 .vscode/*
@@ -43,6 +44,13 @@ coverage/
 .env
 .env.*
 !.env.example
+apps/api/.env
+apps/api/.env.*
+!apps/api/.env.example
+
+# Backend / API privada (hospedada na Discloud, fora do repositório público)
+apps/api/
+
+# OtaKit
 .otakit*
 otakit.config.json
-

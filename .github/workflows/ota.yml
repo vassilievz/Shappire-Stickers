@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'android/**'
+      - 'apps/app/android/**'
+      - 'apps/api/**'
       - 'docs/**'
       - 'README.md'
       - '.gitignore'
@@ -43,8 +44,8 @@ jobs:
 
       - name: Verify build artifacts exist
         run: |
-          if [ ! -f "dist/index.html" ]; then
-            echo "::error::Build output dist/index.html not found!"
+          if [ ! -f "apps/app/dist/index.html" ]; then
+            echo "::error::Build output apps/app/dist/index.html not found!"
             exit 1
           fi
 
@@ -52,4 +53,4 @@ jobs:
         env:
           OTAKIT_TOKEN: ${{ secrets.OTAKIT_TOKEN }}
         run: |
-          npx -y @otakit/cli@latest upload dist --release --fail-on-incompatible
+          npx -y @otakit/cli@latest upload apps/app/dist --release --fail-on-incompatible

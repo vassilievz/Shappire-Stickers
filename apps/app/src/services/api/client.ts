@@ -1,0 +1,171 @@
+import { getFirebaseAuth } from '@/services/firebase/config';
+import { AppError, type AppErrorCode } from '@/shared/errors';
+import { createLogger } from '@/services/logging/logger';
+
+const logger = createLogger('api-client');
+
+const DEFAULT_TIMEOUT_MS = 15_000;
+const UPLOAD_TIMEOUT_MS = 60_000;
+
+/** Mensagem exigida pela diretiva (§22) para ações que exigem conexão. */
+export const OFFLINE_MESSAGE = 'Você está offline. Esta ação precisa de conexão com a internet.';
+
+export interface ApiRequestInit {
+  method?: 'GET' | 'PATCH' | 'POST';
+  body?: FormData | string;
+  timeoutMs?: number;
+}
+
+export interface ApiResponse {
+  status: number;
+  body: unknown;
+}
+
+/**
+ * Única porta de saída HTTP do app para a API Shappire. Nenhum segredo vive
+ * aqui: apenas o URL público (VITE_API_URL) e o ID token do Firebase Auth do
+ * usuário logado (§20/§21). O token NUNCA é persistido — é reobtido a cada
+ * requisição, e o SDK do Firebase renova automaticamente quando expira.
+ */
+export function getApiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_URL;
+  const base = (typeof raw === 'string' ? raw : '').trim().replace(/\/+$/, '');
+  if (!base) {
+    throw new AppError(
+      'API_NOT_CONFIGURED',
+      'O endereço da API (VITE_API_URL) não está configurado neste ambiente.',
+    );
+  }
+  return base;
+}
+
+async function getAuthToken(): Promise<string> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) {
+    throw new AppError('UNAUTHORIZED', 'Sua sessão expirou. Entre novamente para continuar.');
+  }
+  return user.getIdToken();
+}
+
+interface MappedApiError {
+  code: AppErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Mapeia o código estável da API (`{error, message}`) para AppError. O app
+ * nunca confia na `message` do servidor como chave — só o enum (§28).
+ */
+function mapApiError(apiCode: string, message: string): MappedApiError {
+  switch (apiCode) {
+    case 'VALIDATION_ERROR':
+      return { code: 'INVALID_INPUT', message: message || 'Dados inválidos.' };
+    case 'UNAUTHORIZED':
+      return { code: 'UNAUTHORIZED', message: message || 'Sua sessão expirou. Entre novamente.' };
+    case 'FORBIDDEN':
+      return { code: 'PERMISSION_DENIED', message: message || 'Permissão negada.' };
+    case 'NOT_FOUND':
+      return { code: 'NOT_FOUND', message: message || 'Item não encontrado.' };
+    case 'PROFILE_NOT_FOUND':
+      return {
+        code: 'NOT_FOUND',
+        message: message || 'Perfil ainda não criado.',
+        details: { reason: 'PROFILE_NOT_FOUND' },
+      };
+    case 'USERNAME_TAKEN':
+      return {
+        code: 'USERNAME_TAKEN',
+        message: message || 'Este usuário já está em uso.',
+        details: { field: 'username', reason: 'USERNAME_TAKEN' },
+      };
+    case 'PAYLOAD_TOO_LARGE':
+      return { code: 'IMAGE_TOO_LARGE', message: message || 'A imagem excede o tamanho permitido.' };
+    case 'UNSUPPORTED_MEDIA_TYPE':
+      return { code: 'UNSUPPORTED_FORMAT', message: message || 'Formato de imagem não suportado.' };
+    case 'RATE_LIMIT_EXCEEDED':
+      return {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: message || 'Muitas tentativas em pouco tempo. Aguarde e tente novamente.',
+      };
+    case 'UPLOAD_FAILED':
+      return { code: 'UPLOAD_FAILED', message: message || 'Não foi possível enviar a imagem.' };
+    default:
+      return { code: 'UNKNOWN', message: message || 'Ocorreu um erro inesperado.' };
+  }
+}
+
+function toErrorFromStatus(status: number, message: string): MappedApiError {
+  if (status === 401) {
+    return { code: 'UNAUTHORIZED', message: message || 'Sua sessão expirou. Entre novamente.' };
+  }
+  if (status === 404) {
+    return { code: 'NOT_FOUND', message: message || 'Item não encontrado.' };
+  }
+  if (status === 429) {
+    return { code: 'RATE_LIMIT_EXCEEDED', message: message || 'Muitas tentativas em pouco tempo.' };
+  }
+  return { code: 'UNKNOWN', message: message || 'O servidor não respondeu como esperado.' };
+}
+
+async function parseBody(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return undefined;
+  }
+}
+
+function toAppErrorFromResponse(status: number, body: unknown): AppError {
+  const payload = body as { error?: unknown; message?: unknown } | null;
+  const apiCode = typeof payload?.error === 'string' ? payload.error : '';
+  const message = typeof payload?.message === 'string' ? payload.message : '';
+  const mapped = apiCode
+    ? mapApiError(apiCode, message)
+    : toErrorFromStatus(status, message);
+  return new AppError(mapped.code, mapped.message, {
+    details: { ...mapped.details, httpStatus: status },
+  });
+}
+
+export async function apiRequest(path: string, init: ApiRequestInit = {}): Promise<ApiResponse> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new AppError('OFFLINE', OFFLINE_MESSAGE);
+  }
+
+  const token = await getAuthToken();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      method: init.method ?? 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(typeof init.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: init.body,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      logger.debug('Requisição abortada por timeout:', path);
+      throw new AppError('NETWORK_ERROR', 'A conexão com o servidor demorou demais. Tente novamente.');
+    }
+    // fetch só rejeita por falha de rede/DNS — offline de fato (§22).
+    logger.debug('Falha de rede na requisição:', path);
+    throw new AppError('OFFLINE', OFFLINE_MESSAGE);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    throw toAppErrorFromResponse(response.status, await parseBody(response));
+  }
+
+  return { status: response.status, body: await parseBody(response) };
+}
+
+export { DEFAULT_TIMEOUT_MS, UPLOAD_TIMEOUT_MS };
