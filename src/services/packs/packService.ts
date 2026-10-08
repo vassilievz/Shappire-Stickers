@@ -35,6 +35,7 @@ import {
   writeTrayFile,
   writeWhatsAppContents,
 } from '@/services/whatsapp/stickerPackExporter';
+import { logAnalyticsEvent } from '@/services/firebase/analytics';
 
 const log = createLogger('pack-service');
 
@@ -71,6 +72,7 @@ export async function createPack(
   const next = [...packs, pack];
   await persistPack(next);
   log.info(`Pacote criado: ${pack.id}`);
+  void logAnalyticsEvent('pack_created');
   return { pack, packs: next };
 }
 
@@ -193,6 +195,7 @@ export async function addStickerToPack(
   const next = packs.map((item, i) => (i === index ? updated : item));
   await persistPack(next);
   log.info(`Figurinha adicionada ao pacote ${pack.id} (${sizeBytes} bytes${isAnimated ? ' · animada' : ''})`);
+  void logAnalyticsEvent('sticker_created', { is_animated: isAnimated });
   return { pack: updated, sticker };
 }
 

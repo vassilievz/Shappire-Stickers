@@ -15,6 +15,7 @@ import {
   type PackAddedState,
   type StickerPackNativeStatus,
 } from './whatsappNative';
+import { logAnalyticsEvent } from '@/services/firebase/analytics';
 
 const log = createLogger('whatsapp-service');
 
@@ -115,6 +116,7 @@ export async function addPackToWhatsApp(pack: StickerPack): Promise<AddToWhatsAp
       packName: pack.name,
     });
     log.info(`Resultado do WhatsApp: ${result.outcome}`);
+    void logAnalyticsEvent('whatsapp_export', { pack_id: pack.id, outcome: result.outcome });
     return result;
   } catch (error) {
     throw toAppError(error, 'WHATSAPP_ADD_FAILED');

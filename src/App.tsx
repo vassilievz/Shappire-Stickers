@@ -9,11 +9,20 @@ import { PacksPage } from '@/features/packs/PacksPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
+import { useAuthStore } from '@/state/authStore';
 import { notifyAppReadyIfNative } from '@/services/ota/otaService';
+import { logAnalyticsEvent } from '@/services/firebase';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeAuth = useAuthStore.getState().initialize();
+    return () => {
+      unsubscribeAuth();
+    };
+  }, []);
 
   useEffect(() => {
     void hydrateSettings().finally(() => {
@@ -24,6 +33,7 @@ export function App() {
   useEffect(() => {
     if (isReady) {
       void notifyAppReadyIfNative();
+      void logAnalyticsEvent('app_open');
     }
   }, [isReady]);
 

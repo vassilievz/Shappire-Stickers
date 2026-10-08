@@ -7,12 +7,15 @@ import {
   ExternalLink,
   HardDrive,
   Info,
+  LogIn,
+  LogOut,
   AtSign,
   Palette,
   RefreshCw,
   Shield,
   Sticker,
   Trash2,
+  User,
 } from 'lucide-react';
 import { Badge, Button, Divider, SectionTitle } from '@/shared/components/primitives';
 import { SegmentedControl, SwitchField, TextInput } from '@/shared/components/inputs';
@@ -34,6 +37,7 @@ import {
 import { useLibraryStore } from '@/state/libraryStore';
 import { showToast } from '@/state/toastStore';
 import { useSettingsStore } from '@/state/settingsStore';
+import { useAuthStore } from '@/state/authStore';
 import type { LanguagePreference, ThemePreference } from '@/services/storage/settingsRepository';
 import { useTranslation } from '@/i18n';
 import {
@@ -76,6 +80,39 @@ export function SettingsPage() {
   >('idle');
   const [availableOtaVersion, setAvailableOtaVersion] = useState<string | null>(null);
   const [otaErrorMessage, setOtaErrorMessage] = useState<string | null>(null);
+
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isSigningIn = useAuthStore((state) => state.isSigningIn);
+  const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
+  const signOut = useAuthStore((state) => state.signOut);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    void hapticSelection();
+    const ok = await signInWithGoogle();
+    if (ok) {
+      showToast('Login com o Google realizado com sucesso!', 'success');
+    } else {
+      const err = useAuthStore.getState().error;
+      showToast(err || 'Não foi possível conectar com o Google.', 'error');
+    }
+  };
+
+  const handleSignOut = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut();
+      showToast('Sessão encerrada com sucesso.', 'info');
+      setLogoutConfirmOpen(false);
+    } catch {
+      showToast('Não foi possível sair da conta.', 'error');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     void getOtaStatus().then((status) => {
@@ -251,6 +288,79 @@ export function SettingsPage() {
       </header>
 
       <BlurFade durationMs={300} delayMs={0}>
+        <section className="flex flex-col gap-3">
+          <SectionTitle
+            title="Conta"
+            description="Sincronize seu perfil. O aplicativo continua 100% funcional offline sem conta."
+            action={isAuthenticated ? <Badge tone="neutral">Conectado</Badge> : undefined}
+          />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
+            <div className="flex items-center gap-3 min-w-0">
+              {isAuthenticated && user ? (
+                user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'Avatar'}
+                    className="size-10 shrink-0 rounded-full border border-line object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2 text-[14px] font-semibold text-ink"
+                    aria-hidden
+                  >
+                    {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                  </span>
+                )
+              ) : (
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-muted"
+                  aria-hidden
+                >
+                  <User className="size-5" />
+                </span>
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="truncate text-[14px] font-medium text-ink">
+                  {isAuthenticated && user
+                    ? profile?.displayName || user.displayName || 'Usuário Shappire'
+                    : 'Não conectado'}
+                </span>
+                <span className="truncate text-[12px] text-ink-muted">
+                  {isAuthenticated && user
+                    ? user.email || 'Sem e-mail'
+                    : 'Entrar permite associar seus dados de perfil'}
+                </span>
+              </div>
+            </div>
+
+            {isAuthenticated ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLogoutConfirmOpen(true)}
+                icon={<LogOut className="size-3.5" aria-hidden />}
+              >
+                Sair
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                loading={isSigningIn}
+                onClick={() => void handleGoogleSignIn()}
+                icon={<LogIn className="size-3.5" aria-hidden />}
+              >
+                Entrar com Google
+              </Button>
+            )}
+          </div>
+        </section>
+      </BlurFade>
+
+      <Divider />
+
+      <BlurFade durationMs={300} delayMs={50}>
       <section className="flex flex-col gap-3">
         <SectionTitle title={t('settings.language')} />
         <button
@@ -621,6 +731,17 @@ export function SettingsPage() {
         loading={cleaning}
         onConfirm={() => void runCleanup()}
         onCancel={() => setCleanupKind(null)}
+      />
+
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title="Sair da conta?"
+        message="Seus pacotes e figurinhas criados localmente continuarão disponíveis normalmente no aparelho."
+        confirmLabel="Sair"
+        cancelLabel={t('common.cancel') || 'Cancelar'}
+        loading={loggingOut}
+        onConfirm={() => void handleSignOut()}
+        onCancel={() => setLogoutConfirmOpen(false)}
       />
 
       <BottomSheet

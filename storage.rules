@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Foto de perfil do usuário: users/{userId}/profile/...
+    // - Leitura pública ou autenticada
+    // - Escrita permitida apenas pelo próprio usuário logado
+    // - Valida tamanho máximo de 5MB e MIME type de imagem
+    match /users/{userId}/profile/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // Pasta privada de assets do usuário: users/{userId}/...
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Bloqueia qualquer outro caminho por padrão
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

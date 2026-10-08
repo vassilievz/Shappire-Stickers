@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "510767186684",
+    "project_id": "shappiresticker",
+    "storage_bucket": "shappiresticker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510767186684:android:ed9a9295826077b1024d79",
+        "android_client_info": {
+          "package_name": "com.shappire.stickers"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "510767186684-bav5t6jn3i66gdtiuugimins03fm9id2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shappire.stickers",
+            "certificate_hash": "d2ab545f540a4c7ab6da3c9b0d752337a0052598"
+          }
+        },
+        {
+          "client_id": "510767186684-9ao78vjutm48ub2eob6jpee1rp3hoadm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDeijqOB08IF-5Y7XH2cunoE_WLE5wHRQA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510767186684-9ao78vjutm48ub2eob6jpee1rp3hoadm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -9,6 +9,7 @@ import { createLogger } from '@/services/logging/logger';
 import { createId, createPackIdentifier } from '@/shared/utils/id';
 import { nowIso } from '@/shared/utils/format';
 import type { StickerPack, StickerRecord, TrayImageRecord } from '@/domain/stickerPack';
+import { logAnalyticsEvent } from '@/services/firebase/analytics';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[^\w.-]/g, '_');
@@ -79,6 +80,7 @@ export async function downloadPackZip(packId: string): Promise<void> {
   anchor.click();
   document.body.removeChild(anchor);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  void logAnalyticsEvent('pack_exported');
 }
 
 /**
@@ -145,6 +147,7 @@ export async function importPackFromZip(file: File | Blob): Promise<StickerPack>
   await upsertPack(newPack);
   const allPacks = await listPacks();
   await writeWhatsAppContents(allPacks);
+  void logAnalyticsEvent('zip_imported');
 
   return newPack;
 }

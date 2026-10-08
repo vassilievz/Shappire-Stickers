@@ -16,6 +16,7 @@ import { createBrowserImageEncoder, type ImageEncoder } from './encoder';
 import { loadImageElement } from './imageLoader';
 import { renderStickerToCanvas } from './renderer';
 import type { RasterResources } from './rasterCache';
+import { logAnalyticsEvent } from '@/services/firebase/analytics';
 
 
 export const WEBP_QUALITY_STEPS = [0.95, 0.9, 0.85, 0.8, 0.72, 0.62, 0.5] as const;
@@ -84,6 +85,7 @@ export async function exportStickerArtwork(
     }
 
     const encoded = await encodeWithinLimit(canvas, encoder, maxBytes);
+    void logAnalyticsEvent('sticker_exported', { mime_type: 'image/webp' });
     return {
       base64: encoded.base64,
       sizeBytes: encoded.sizeBytes,

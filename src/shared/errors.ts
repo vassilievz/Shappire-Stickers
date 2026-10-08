@@ -26,7 +26,13 @@ export type AppErrorCode =
   | 'NATIVE_UNAVAILABLE'
   | 'WHATSAPP_NOT_INSTALLED'
   | 'WHATSAPP_ADD_FAILED'
-  | 'PERMISSION_DENIED';
+  | 'PERMISSION_DENIED'
+  | 'AUTH_CANCELLED'
+  | 'AUTH_FAILED'
+  | 'NETWORK_ERROR'
+  | 'NATIVE_CONFIG_MISSING'
+  | 'UNSUPPORTED_FORMAT'
+  | 'STORAGE_UPLOAD_FAILED';
 
 export interface AppErrorOptions {
   cause?: unknown;
@@ -95,6 +101,12 @@ const FRIENDLY_MESSAGES: Partial<Record<AppErrorCode, string>> = {
   WHATSAPP_NOT_INSTALLED: 'O WhatsApp não está instalado neste aparelho.',
   WHATSAPP_ADD_FAILED: 'O WhatsApp não conseguiu adicionar este pacote.',
   PERMISSION_DENIED: 'Permissão negada pelo sistema.',
+  AUTH_CANCELLED: 'O login com o Google foi cancelado.',
+  AUTH_FAILED: 'Não foi possível concluir o login com o Google.',
+  NETWORK_ERROR: 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+  NATIVE_CONFIG_MISSING: 'Configuração nativa do Firebase pendente no Android (google-services.json).',
+  UNSUPPORTED_FORMAT: 'Formato de imagem não suportado. Use PNG, JPEG ou WebP.',
+  STORAGE_UPLOAD_FAILED: 'Não foi possível enviar a imagem para a nuvem. Verifique a conexão.',
 };
 
 export function friendlyMessage(error: unknown): string {

@@ -5,6 +5,7 @@ import { EDITOR_CONFIG } from '@/config/editor';
 import { AppError, toAppError } from '@/shared/errors';
 import { createLogger } from '@/services/logging/logger';
 import { decodeImageFromDataUrl, readFileAsDataUrl } from '@/services/imaging/imageLoader';
+import { logAnalyticsEvent } from '@/services/firebase/analytics';
 
 const log = createLogger('image-picker');
 
@@ -40,7 +41,10 @@ export async function pickImagesFromGallery(options: { maxImages?: number } = {}
         if (!dataUrl) continue;
         picked.push(await dataUrlToPickedImage(dataUrl, `imagem_${Date.now()}_${index + 1}`));
       }
-      if (picked.length > 0) return picked;
+      if (picked.length > 0) {
+        void logAnalyticsEvent('image_imported', { count: picked.length, source: 'native' });
+        return picked;
+      }
       log.warn('Seletor nativo não retornou imagens; usando seletor do sistema.');
     } catch (error) {
       const appError = toAppError(error);
@@ -49,7 +53,11 @@ export async function pickImagesFromGallery(options: { maxImages?: number } = {}
     }
   }
 
-  return pickViaFileInput(maxImages);
+  const result = await pickViaFileInput(maxImages);
+  if (result.length > 0) {
+    void logAnalyticsEvent('image_imported', { count: result.length, source: 'file_input' });
+  }
+  return result;
 }
 
 export async function pickSingleImage(): Promise<PickedImage> {
