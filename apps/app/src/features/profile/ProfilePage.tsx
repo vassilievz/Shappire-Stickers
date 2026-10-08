@@ -84,12 +84,17 @@ function ProfileSkeleton() {
 export function ProfilePage() {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authUser = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isSigningIn = useAuthStore((state) => state.isSigningIn);
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
 
-  const profile = useProfileStore((state) => state.profile);
+  const storeProfile = useProfileStore((state) => state.profile);
+  const authProfile = useAuthStore((state) => state.profile);
+  // Usa o perfil persistido no MongoDB ou fallback para a conta autenticada do Firebase
+  const profile = storeProfile ?? authProfile;
   const status = useProfileStore((state) => state.status);
+  const error = useProfileStore((state) => state.error);
   const hydrate = useProfileStore((state) => state.hydrate);
   const stats = useProfileStats();
 
@@ -107,7 +112,8 @@ export function ProfilePage() {
     );
   }
 
-  if (!isAuthenticated) {
+  // Apenas exibe "You are not signed in" se o Firebase Auth realmente não possuir usuário autenticado
+  if (!isAuthenticated && !authUser) {
     return (
       <div className="flex min-h-[60dvh] items-center justify-center">
         <EmptyState
@@ -131,12 +137,21 @@ export function ProfilePage() {
 
   if (!profile) {
     if (status === 'error') {
+      const errorDescription =
+        error === 'UNAUTHORIZED'
+          ? t('errors.UNAUTHORIZED')
+          : error === 'OFFLINE'
+          ? t('errors.OFFLINE')
+          : error === 'NETWORK_ERROR'
+          ? t('errors.NETWORK_ERROR')
+          : t('errors.UNKNOWN');
+
       return (
         <div className="flex min-h-[60dvh] items-center justify-center">
           <EmptyState
             icon={<UserRound className="size-6" aria-hidden />}
-            title={t('profile.signedOut.title')}
-            description={t('errors.NETWORK_ERROR')}
+            title={t('profile.title')}
+            description={errorDescription}
             action={
               <Button variant="secondary" fullWidth onClick={() => void hydrate()}>
                 {t('common.retry')}

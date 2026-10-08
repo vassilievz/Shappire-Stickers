@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { getFirebaseAuth } from '@/services/firebase/config';
 import { AppError, type AppErrorCode } from '@/shared/errors';
 import { createLogger } from '@/services/logging/logger';
@@ -40,11 +42,40 @@ export function getApiBaseUrl(): string {
 }
 
 async function getAuthToken(): Promise<string> {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) {
+  let token: string | null = null;
+  const webUser = getFirebaseAuth().currentUser;
+
+  if (webUser) {
+    try {
+      token = await webUser.getIdToken();
+    } catch (err) {
+      logger.debug('Falha ao obter token via webUser:', err);
+    }
+  }
+
+  if (!token && Capacitor.isNativePlatform()) {
+    try {
+      const res = await FirebaseAuthentication.getIdToken();
+      if (res?.token) {
+        token = res.token;
+      }
+    } catch (nativeErr) {
+      logger.debug('Falha ao obter token via FirebaseAuthentication nativo:', nativeErr);
+    }
+  }
+
+  // Log seguro de diagnóstico (§9) — NUNCA expõe o token
+  console.warn('[AUTH:diag]', {
+    currentUserExists: Boolean(webUser),
+    uidPresent: Boolean(webUser?.uid),
+    emailPresent: Boolean(webUser?.email),
+    tokenObtained: Boolean(token),
+  });
+
+  if (!token) {
     throw new AppError('UNAUTHORIZED', 'Sua sessão expirou. Entre novamente para continuar.');
   }
-  return user.getIdToken();
+  return token;
 }
 
 interface MappedApiError {
@@ -130,17 +161,27 @@ function toAppErrorFromResponse(status: number, body: unknown): AppError {
 
 export async function apiRequest(path: string, init: ApiRequestInit = {}): Promise<ApiResponse> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    console.warn('[API:diag] Dispositivo offline (navigator.onLine === false), abortando requisição:', path);
     throw new AppError('OFFLINE', OFFLINE_MESSAGE);
   }
 
   const token = await getAuthToken();
+  const endpoint = `${getApiBaseUrl()}${path}`;
+  const method = init.method ?? 'GET';
+
+  console.warn('[API:diag] Enviando requisição:', {
+    endpoint,
+    method,
+    tokenObtained: Boolean(token),
+  });
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   let response: Response;
   try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, {
-      method: init.method ?? 'GET',
+    response = await fetch(endpoint, {
+      method,
       headers: {
         Authorization: `Bearer ${token}`,
         ...(typeof init.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
@@ -148,21 +189,36 @@ export async function apiRequest(path: string, init: ApiRequestInit = {}): Promi
       body: init.body,
       signal: controller.signal,
     });
+    console.warn('[API:diag] Resposta recebida:', {
+      endpoint,
+      httpStatus: response.status,
+      ok: response.ok,
+    });
   } catch (error) {
     if (error instanceof AppError) throw error;
     if (error instanceof DOMException && error.name === 'AbortError') {
       logger.debug('Requisição abortada por timeout:', path);
+      console.warn('[API:diag] Requisição abortada por timeout:', endpoint);
       throw new AppError('NETWORK_ERROR', 'A conexão com o servidor demorou demais. Tente novamente.');
     }
     // fetch só rejeita por falha de rede/DNS — offline de fato (§22).
     logger.debug('Falha de rede na requisição:', path);
+    console.warn('[API:diag] Falha de rede/fetch:', endpoint, error);
     throw new AppError('OFFLINE', OFFLINE_MESSAGE);
   } finally {
     clearTimeout(timeout);
   }
 
   if (!response.ok) {
-    throw toAppErrorFromResponse(response.status, await parseBody(response));
+    const parsed = await parseBody(response);
+    const appError = toAppErrorFromResponse(response.status, parsed);
+    console.warn('[API:diag] Erro retornado pela API:', {
+      endpoint,
+      httpStatus: response.status,
+      errorCode: appError.code,
+      message: appError.message,
+    });
+    throw appError;
   }
 
   return { status: response.status, body: await parseBody(response) };

@@ -1,6 +1,7 @@
 import { API_ROUTES } from '@shappire/contracts';
 import { apiRequest, UPLOAD_TIMEOUT_MS } from './client';
 import { getFirebaseAuth } from '@/services/firebase/config';
+import { useAuthStore } from '@/state/authStore';
 import { sanitizeProfileImage, type ProfileImage, type ProfileImageSlot } from '@/domain/profile';
 import type { UserProfile } from '@/services/firebase/types';
 import { AppError } from '@/shared/errors';
@@ -69,7 +70,7 @@ function requireProfile(uid: string, body: unknown): UserProfile {
 }
 
 function currentUid(): string {
-  const uid = getFirebaseAuth().currentUser?.uid;
+  const uid = getFirebaseAuth().currentUser?.uid || useAuthStore.getState().user?.uid;
   if (!uid) {
     throw new AppError('UNAUTHORIZED', 'Sua sessão expirou. Entre novamente para continuar.');
   }

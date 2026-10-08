@@ -39,22 +39,33 @@ function publishProfile(profile: UserProfile, stale: boolean): void {
 async function refreshFromApi(uid: string): Promise<void> {
   try {
     const remote = await loadProfile();
-    if (useAuthStore.getState().user?.uid !== uid) return;
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser?.uid !== uid) return;
     if (remote) {
       publishProfile(remote, false);
       void saveCachedProfile(remote).catch((error) =>
         logger.debug('Falha ao gravar cache de perfil:', error),
       );
-    } else if (useProfileStore.getState().profile?.uid !== uid) {
-      // Perfil ainda não criado na API (surge no primeiro PATCH) — estado
-      // válido e não é erro: a tela abre em branco, pronta para edição.
-      useProfileStore.setState({ profile: null, status: 'ready', isStale: false, error: null });
+    } else {
+      // Perfil ainda não criado na API (surge no primeiro PATCH) — estado válido.
+      // Se houver perfil no authStore (ex: conta Google), usa-o como base pronta.
+      const authProfile = useAuthStore.getState().profile;
+      if (authProfile && authProfile.uid === uid) {
+        publishProfile(authProfile, false);
+      } else if (useProfileStore.getState().profile?.uid !== uid) {
+        useProfileStore.setState({ profile: null, status: 'ready', isStale: false, error: null });
+      }
     }
   } catch (error) {
-    // Mantém o último estado conhecido; sinaliza apenas se não há nada em tela.
-    logger.debug('Perfil online indisponível (offline?):', error);
+    const appErr = toAppError(error);
+    logger.warn('Perfil online indisponível:', appErr.code, appErr.message);
     if (useProfileStore.getState().profile?.uid !== uid) {
-      useProfileStore.setState({ status: 'error', error: 'NETWORK_ERROR' });
+      const authProfile = useAuthStore.getState().profile;
+      if (authProfile && authProfile.uid === uid) {
+        publishProfile(authProfile, true);
+      } else {
+        useProfileStore.setState({ status: 'error', error: appErr.code });
+      }
     }
   }
 }
