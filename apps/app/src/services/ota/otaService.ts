@@ -42,11 +42,13 @@ export async function notifyAppReadyIfNative(): Promise<boolean> {
   }
 
   try {
+    console.info('[OtaKit:diag] Notificando app ready (saúde do bundle)...');
     await OtaKit.notifyAppReady();
     hasNotifiedReady = true;
+    console.info('[OtaKit:diag] notifyAppReady concluído com sucesso.');
     return true;
   } catch (error) {
-    console.warn('[OtaKit] Falha ao chamar notifyAppReady:', error);
+    console.warn('[OtaKit:diag] Falha ao chamar notifyAppReady:', error);
     return false;
   }
 }
@@ -72,6 +74,15 @@ export async function getOtaStatus(): Promise<AppUpdateStatus> {
     const currentVersion = state.current?.version?.trim() || APP_INFO.version;
     const stagedVersion = state.staged?.version?.trim() || null;
 
+    console.info('[OtaKit:diag] Estado atual:', {
+      appId: 'c4cf6be0-def9-480d-936e-0be638499ca3',
+      runtimeVersion: '0.2.1',
+      currentVersion,
+      stagedVersion,
+      bundleStatus: state.current?.status,
+      hasStagedUpdate: stagedVersion !== null,
+    });
+
     return {
       isNative: true,
       currentVersion,
@@ -81,7 +92,7 @@ export async function getOtaStatus(): Promise<AppUpdateStatus> {
       lastFailure,
     };
   } catch (error) {
-    console.warn('[OtaKit] Erro ao obter estado do updater:', error);
+    console.warn('[OtaKit:diag] Erro ao obter estado do updater:', error);
     return {
       isNative: true,
       currentVersion: APP_INFO.version,
@@ -97,11 +108,15 @@ export async function getOtaStatus(): Promise<AppUpdateStatus> {
  */
 export async function checkOtaUpdate(): Promise<UpdateCheckResult> {
   if (!Capacitor.isNativePlatform()) {
+    console.info('[OtaKit:diag] Verificação ignorada: ambiente web não suporta OTA nativo.');
     return { kind: 'unsupported' };
   }
 
   try {
+    console.info('[OtaKit:diag] Iniciando verificação de atualizações (App ID: c4cf6be0-def9-480d-936e-0be638499ca3, runtime: 0.2.1)...');
     const result: CheckResult = await OtaKit.check();
+    console.info('[OtaKit:diag] Resultado da verificação:', result.kind, result);
+
     if (result.kind === 'no_update') {
       return { kind: 'up_to_date' };
     }
@@ -118,7 +133,7 @@ export async function checkOtaUpdate(): Promise<UpdateCheckResult> {
     return { kind: 'up_to_date' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao verificar atualizações';
-    console.warn('[OtaKit] Erro na verificação:', error);
+    console.warn('[OtaKit:diag] Erro na verificação:', error);
     return { kind: 'error', message };
   }
 }
@@ -132,14 +147,17 @@ export async function downloadOtaUpdate(): Promise<UpdateDownloadResult> {
   }
 
   try {
+    console.info('[OtaKit:diag] Baixando bundle OTA...');
     const res: DownloadResult = await OtaKit.download();
+    console.info('[OtaKit:diag] Resposta do download:', res.kind);
+
     if (res.kind === 'staged') {
       return { success: true, stagedVersion: res.bundle.version };
     }
     return { success: false, error: 'Nenhuma atualização pronta para download.' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao baixar atualização.';
-    console.warn('[OtaKit] Erro no download:', error);
+    console.warn('[OtaKit:diag] Erro no download:', error);
     return { success: false, error: message };
   }
 }
@@ -156,9 +174,10 @@ export async function applyOtaUpdate(): Promise<void> {
   }
 
   try {
+    console.info('[OtaKit:diag] Aplicando bundle OTA preparado (staged)...');
     await OtaKit.apply();
   } catch (error) {
-    console.error('[OtaKit] Falha ao aplicar atualização:', error);
+    console.error('[OtaKit:diag] Falha ao aplicar atualização:', error);
     window.location.reload();
   }
 }

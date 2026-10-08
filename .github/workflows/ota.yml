@@ -50,8 +50,9 @@ jobs:
           fi
 
       - name: Upload and publish OTA release to OtaKit
+        working-directory: apps/app
         env:
           OTAKIT_TOKEN: ${{ secrets.OTAKIT_TOKEN }}
           OTAKIT_APP_ID: ${{ vars.OTAKIT_APP_ID || secrets.OTAKIT_APP_ID }}
         run: |
-          npx -y @otakit/cli@latest upload apps/app/dist --release --fail-on-incompatible
+          npx -y @otakit/cli@latest upload dist --release --fail-on-incompatible
