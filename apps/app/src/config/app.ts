@@ -6,7 +6,7 @@ export const APP_INFO = {
   description:
     'Estúdio local de figurinhas: importe imagens, recorte, adicione texto e desenhos, ' +
     'organize pacotes e envie para o WhatsApp. Tudo funciona offline, sem contas e sem servidores.',
-  version: '0.2.1',
+  version: '0.2.2',
   
   repositoryUrl: 'https://github.com/vassilievz/Shappire-Stickers',
   licenseName: 'MIT',

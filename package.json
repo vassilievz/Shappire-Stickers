@@ -1,7 +1,7 @@
 {
   "name": "shappire-stickers",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Monorepo Shappire Stickers: app Android (apps/app), API (apps/api) e contratos compartilhados (packages/contracts)",
   "license": "MIT",
   "author": "Gabriel (vassiliev)",
