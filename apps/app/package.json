@@ -27,10 +27,10 @@
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.5.2",
-    "@shappire/contracts": "*",
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/camera": "^8.2.5",
+    "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "^8.1.4",
     "@capacitor/haptics": "^8.0.2",
@@ -39,6 +39,7 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
     "@otakit/capacitor-updater": "^3.2.0",
+    "@shappire/contracts": "*",
     "firebase": "^12.19.0",
     "jszip": "^3.10.2",
     "konva": "^10.7.0",
@@ -48,6 +49,7 @@
     "react-dom": "^19.3.0",
     "react-konva": "^19.3.0",
     "react-router-dom": "^7.18.4",
+    "shadcn": "^4.21.4",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

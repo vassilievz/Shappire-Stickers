@@ -6,19 +6,23 @@ import {
   Clipboard,
   Download,
   Film,
+  Globe,
   Headphones,
+  Image as ImageIcon,
+  MessageCircle,
   RefreshCw,
   Sparkles,
   WifiOff,
   Wrench,
   X,
 } from 'lucide-react';
-import { Badge, Button } from '@/shared/components/primitives';
+import { Button } from '@/shared/components/primitives';
 import { AnimatedShinyText, BlurFade } from '@/shared/components/motion';
 import { showToast } from '@/state/toastStore';
 import { useTranslation } from '@/i18n';
 import { cx } from '@/shared/utils/cx';
 import { addImageFromDataUrlToCanvas } from '@/features/editor/store/editorAsyncActions';
+import { readClipboardText } from '@/services/native/clipboard';
 import {
   ToolsApiError,
   fetchImageAsDataUrl,
@@ -27,18 +31,7 @@ import {
   triggerBrowserDownload,
 } from '@/services/tools/toolsApi';
 import type { DownloadMode, DownloadPickerItem, DownloadSuccessResult } from '@/services/tools/types';
-
-const SUPPORTED_PLATFORMS = [
-  'TikTok',
-  'Instagram',
-  'Twitter / X',
-  'Pinterest',
-  'YouTube',
-  'Reddit',
-  'Facebook',
-  'Threads',
-  'SoundCloud',
-] as const;
+import { SUPPORTED_PLATFORMS, type SupportedPlatform } from './platforms';
 
 function isImageUrl(url: string, filename?: string): boolean {
   const target = (filename || url).toLowerCase();
@@ -54,6 +47,21 @@ function isImageUrl(url: string, filename?: string): boolean {
   );
 }
 
+function getPlatformIcon(category: SupportedPlatform['category']) {
+  switch (category) {
+    case 'video':
+      return Film;
+    case 'audio':
+      return Headphones;
+    case 'photo':
+      return ImageIcon;
+    case 'social':
+      return MessageCircle;
+    default:
+      return Globe;
+  }
+}
+
 export function ToolsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -64,6 +72,7 @@ export function ToolsPage() {
   const [importingToEditor, setImportingToEditor] = useState<string | null>(null);
   const [result, setResult] = useState<DownloadSuccessResult | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
@@ -82,17 +91,16 @@ export function ToolsPage() {
   }, []);
 
   const handlePaste = useCallback(async () => {
-    try {
-      if (!navigator.clipboard?.readText) {
-        showToast(t('common.error'), 'warning');
-        return;
-      }
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setUrl(text.trim());
-      }
-    } catch {
-      showToast(t('common.error'), 'warning');
+    const res = await readClipboardText();
+    if (res.success && res.text) {
+      setUrl(res.text);
+      showToast(t('tools.clipboardPasted'), 'success');
+    } else if (res.error === 'empty') {
+      showToast(t('tools.clipboardEmpty'), 'warning');
+    } else if (res.error === 'permission_denied') {
+      showToast(t('tools.clipboardPermissionDenied'), 'error');
+    } else {
+      showToast(t('tools.clipboardEmpty'), 'warning');
     }
   }, [t]);
 
@@ -100,6 +108,10 @@ export function ToolsPage() {
     setUrl('');
     setResult(null);
     setErrorKey(null);
+  }, []);
+
+  const handleSelectPlatform = useCallback((platform: SupportedPlatform) => {
+    setSelectedPlatform((current) => (current === platform.id ? null : platform.id));
   }, []);
 
   const handleSubmit = useCallback(
@@ -183,6 +195,13 @@ export function ToolsPage() {
     [t],
   );
 
+  const currentPlaceholder = selectedPlatform
+    ? t('tools.urlPlaceholderSelected', {
+        platform:
+          SUPPORTED_PLATFORMS.find((p) => p.id === selectedPlatform)?.name || '',
+      })
+    : t('tools.urlPlaceholder');
+
   return (
     <div className="flex flex-col gap-6 pb-12">
       {/* Header */}
@@ -258,7 +277,7 @@ export function ToolsPage() {
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder={t('tools.urlPlaceholder')}
+                placeholder={currentPlaceholder}
                 disabled={loading}
                 className="w-full h-12 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 pr-20 text-[14px] text-ink placeholder:text-ink-muted focus:border-focus/60 focus:bg-surface-3 transition-colors outline-none"
               />
@@ -299,17 +318,48 @@ export function ToolsPage() {
             </Button>
           </form>
 
-          {/* Supported platforms pills */}
+          {/* Supported platforms with shadcn scroll-fade-x */}
           <div className="flex flex-col gap-2 pt-1 border-t border-line/40">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-muted">
-              {t('tools.supportedPlatforms')}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {SUPPORTED_PLATFORMS.map((platform) => (
-                <Badge key={platform} tone="neutral">
-                  {platform}
-                </Badge>
-              ))}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium tracking-wide uppercase text-ink-muted">
+                {t('tools.supportedPlatforms')} ({SUPPORTED_PLATFORMS.length})
+              </span>
+              {selectedPlatform && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlatform(null)}
+                  className="text-[11px] text-ink-muted hover:text-ink transition-colors"
+                >
+                  {t('tools.clearFilter')}
+                </button>
+              )}
+            </div>
+
+            <div
+              tabIndex={0}
+              aria-label={t('tools.supportedPlatforms')}
+              className="scroll-fade-x no-scrollbar overflow-x-auto flex items-center gap-1.5 py-1.5 -mx-1 px-1 touch-pan-x"
+            >
+              {SUPPORTED_PLATFORMS.map((platform) => {
+                const isSelected = selectedPlatform === platform.id;
+                const Icon = getPlatformIcon(platform.category);
+                return (
+                  <button
+                    key={platform.id}
+                    type="button"
+                    onClick={() => handleSelectPlatform(platform)}
+                    className={cx(
+                      'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-150 select-none active:scale-95',
+                      isSelected
+                        ? 'bg-surface-3 text-ink border-ink/40 shadow-xs'
+                        : 'bg-surface-2 text-ink-muted border-line/60 hover:text-ink hover:bg-surface-3',
+                    )}
+                  >
+                    <Icon className="size-3 shrink-0" />
+                    <span>{platform.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
