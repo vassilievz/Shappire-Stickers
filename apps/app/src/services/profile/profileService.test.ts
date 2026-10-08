@@ -147,7 +147,7 @@ describe('saveProfile — upload de imagem do aparelho', () => {
     return { fetchMock, blob };
   }
 
-  it('sobe a imagem primeiro e grava os metadados no PATCH', async () => {
+  it('garante o perfil no MongoDB via PATCH e depois sobe a imagem do aparelho', async () => {
     const { fetchMock, blob } = stubDataUrlFetch(1024);
     try {
       uploadProfileImageMock.mockResolvedValue({ ...currentProfile, avatar: avatarMeta });
@@ -160,10 +160,15 @@ describe('saveProfile — upload de imagem do aparelho', () => {
       const profile = await saveProfile(currentProfile, draft);
 
       expect(fetchMock).toHaveBeenCalledWith('data:image/png;base64,AAAA');
+      expect(updateProfileMock).toHaveBeenCalledTimes(1);
+      expect(updateProfileMock).toHaveBeenCalledWith({
+        displayName: 'Gabriel',
+        username: 'gabriel',
+        bio: '',
+        avatar: null,
+        banner: null,
+      });
       expect(uploadProfileImageMock).toHaveBeenCalledWith('avatar', blob);
-      expect(updateProfileMock).toHaveBeenCalledWith(
-        expect.objectContaining({ avatar: avatarMeta }),
-      );
       expect(profile.avatar).toEqual(avatarMeta);
     } finally {
       vi.unstubAllGlobals();
@@ -203,12 +208,13 @@ describe('saveProfile — upload de imagem do aparelho', () => {
         details: { field: 'banner' },
       });
       expect(uploadProfileImageMock).not.toHaveBeenCalled();
+      expect(updateProfileMock).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it('falha com UPLOAD_FAILED quando a resposta não traz metadados', async () => {
+  it('falha com UPLOAD_FAILED quando a resposta do upload não traz metadados', async () => {
     stubDataUrlFetch(512);
     try {
       uploadProfileImageMock.mockResolvedValue({ ...currentProfile, avatar: null });
@@ -221,13 +227,13 @@ describe('saveProfile — upload de imagem do aparelho', () => {
       await expect(saveProfile(currentProfile, draft)).rejects.toMatchObject({
         code: 'UPLOAD_FAILED',
       });
-      expect(updateProfileMock).not.toHaveBeenCalled();
+      expect(updateProfileMock).toHaveBeenCalledTimes(1);
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it('propaga o erro do upload sem tocar o PATCH', async () => {
+  it('propaga o erro do upload quando o envio da imagem falha', async () => {
     stubDataUrlFetch(512);
     try {
       uploadProfileImageMock.mockRejectedValue(new AppError('OFFLINE', 'sem rede'));
@@ -240,7 +246,30 @@ describe('saveProfile — upload de imagem do aparelho', () => {
       await expect(saveProfile(currentProfile, draft)).rejects.toMatchObject({
         code: 'OFFLINE',
       });
-      expect(updateProfileMock).not.toHaveBeenCalled();
+      expect(updateProfileMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('não envia o upload da imagem se o PATCH falhar (ex: USERNAME_TAKEN)', async () => {
+    stubDataUrlFetch(512);
+    try {
+      updateProfileMock.mockRejectedValueOnce(
+        new AppError('USERNAME_TAKEN', 'Usuário já em uso.', {
+          details: { field: 'username', reason: 'USERNAME_TAKEN' },
+        }),
+      );
+
+      const draft: ProfileDraft = {
+        ...baseDraft(),
+        avatar: { kind: 'device', dataUrl: 'data:image/png;base64,AAAA', mimeType: 'image/png' },
+      };
+
+      await expect(saveProfile(currentProfile, draft)).rejects.toMatchObject({
+        code: 'USERNAME_TAKEN',
+      });
+      expect(uploadProfileImageMock).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
     }

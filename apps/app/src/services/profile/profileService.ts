@@ -3,10 +3,9 @@ import {
   validateBio,
   validateDisplayName,
   validateUsername,
-  type ProfileImage,
   type ProfileImageSlot,
 } from '@/domain/profile';
-import { fetchProfile, updateProfile, uploadProfileImage, type ProfilePatch } from '@/services/api/profileApi';
+import { fetchProfile, updateProfile, uploadProfileImage } from '@/services/api/profileApi';
 import type { UserProfile } from '@/services/firebase/types';
 import { AppError } from '@/shared/errors';
 import { createLogger } from '@/services/logging/logger';
@@ -32,14 +31,12 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 }
 
 /**
- * Envia a imagem escolhida no aparelho para a API (multipart, campo `file`).
- * O limite é pré-checado no cliente para falhar rápido sem gastar rede; o
- * servidor revalida tamanho e magic bytes (§15).
+ * Pré-valida o tamanho da imagem antes de tocar a rede (§15).
  */
-async function uploadDeviceImage(
+async function prepareDeviceBlob(
   slot: ProfileImageSlot,
   action: { dataUrl: string; mimeType: string },
-): Promise<ProfileImage> {
+): Promise<Blob> {
   const blob = await dataUrlToBlob(action.dataUrl);
   const maxBytes = PROFILE_IMAGE_MAX_BYTES[slot];
   if (blob.size > maxBytes) {
@@ -48,22 +45,27 @@ async function uploadDeviceImage(
       details: { field: slot },
     });
   }
+  return blob;
+}
 
+async function uploadSlotImage(slot: ProfileImageSlot, blob: Blob): Promise<UserProfile> {
   const profile = await uploadProfileImage(slot, blob);
   const meta = profile[slot];
   if (!meta) {
     logger.warn(`Resposta da API sem metadados de ${slot}.`);
     throw new AppError('UPLOAD_FAILED', 'Não foi possível enviar a imagem.');
   }
-  return meta;
+  return profile;
 }
 
 /**
  * Fluxo de salvamento do perfil via API Shappire:
  * 1. valida nome, bio e username localmente (feedback rápido);
- * 2. imagens de dispositivo sobem primeiro (POST multipart) — a API envia ao
- *    V0X, grava só metadados no MongoDB e apaga a imagem antiga (§13/§16);
- * 3. um único PATCH grava os campos e devolve o perfil consolidado.
+ * 2. pré-valida tamanho das imagens escolhidas (evita tráfego inútil);
+ * 3. garante a criação/atualização do documento no MongoDB via PATCH (upsertProfile) —
+ *    se for o primeiro salvamento do usuário, o documento nasce aqui no MongoDB;
+ * 4. com o documento já existente no MongoDB, sobe as imagens de dispositivo (POST multipart) —
+ *    a API envia ao V0X, atualiza o slot correspondente no MongoDB e apaga a imagem antiga (§13/§16).
  * O uid vem do ID token no servidor — nunca do cliente (§9/§10).
  */
 export async function saveProfile(current: UserProfile, draft: ProfileDraft): Promise<UserProfile> {
@@ -91,29 +93,31 @@ export async function saveProfile(current: UserProfile, draft: ProfileDraft): Pr
     username = validation.username;
   }
 
-  let avatar = current.avatar;
-  if (draft.avatar.kind === 'remove') {
-    avatar = null;
-  } else if (draft.avatar.kind === 'device') {
-    avatar = await uploadDeviceImage('avatar', draft.avatar);
-  }
+  // Pré-valida o tamanho das imagens antes de tocar a rede (§15)
+  const avatarBlob =
+    draft.avatar.kind === 'device' ? await prepareDeviceBlob('avatar', draft.avatar) : null;
+  const bannerBlob =
+    draft.banner.kind === 'device' ? await prepareDeviceBlob('banner', draft.banner) : null;
 
-  let banner = current.banner;
-  if (draft.banner.kind === 'remove') {
-    banner = null;
-  } else if (draft.banner.kind === 'device') {
-    banner = await uploadDeviceImage('banner', draft.banner);
-  }
-
-  const patch: ProfilePatch = {
+  // 1. Garante o documento de perfil no MongoDB via PATCH (upsertProfile) com texto e remoções.
+  let profile = await updateProfile({
     displayName,
     username,
     bio: draft.bio.trim(),
-    avatar,
-    banner,
-  };
+    avatar: draft.avatar.kind === 'remove' ? null : current.avatar,
+    banner: draft.banner.kind === 'remove' ? null : current.banner,
+  });
 
-  return updateProfile(patch);
+  // 2. Com o documento garantido no MongoDB, executa os uploads de dispositivo.
+  if (avatarBlob) {
+    profile = await uploadSlotImage('avatar', avatarBlob);
+  }
+
+  if (bannerBlob) {
+    profile = await uploadSlotImage('banner', bannerBlob);
+  }
+
+  return profile;
 }
 
 /**
