@@ -8,8 +8,6 @@ import {
   Film,
   Globe,
   Headphones,
-  Image as ImageIcon,
-  MessageCircle,
   RefreshCw,
   Sparkles,
   WifiOff,
@@ -31,7 +29,8 @@ import {
   triggerBrowserDownload,
 } from '@/services/tools/toolsApi';
 import type { DownloadMode, DownloadPickerItem, DownloadSuccessResult } from '@/services/tools/types';
-import { SUPPORTED_PLATFORMS, type SupportedPlatform } from './platforms';
+import { ALL_SUPPORTED_SITES } from './platforms';
+import { SupportedPlatformsSheet } from './SupportedPlatformsSheet';
 
 function isImageUrl(url: string, filename?: string): boolean {
   const target = (filename || url).toLowerCase();
@@ -47,21 +46,6 @@ function isImageUrl(url: string, filename?: string): boolean {
   );
 }
 
-function getPlatformIcon(category: SupportedPlatform['category']) {
-  switch (category) {
-    case 'video':
-      return Film;
-    case 'audio':
-      return Headphones;
-    case 'photo':
-      return ImageIcon;
-    case 'social':
-      return MessageCircle;
-    default:
-      return Globe;
-  }
-}
-
 export function ToolsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -73,6 +57,7 @@ export function ToolsPage() {
   const [result, setResult] = useState<DownloadSuccessResult | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [platformsSheetOpen, setPlatformsSheetOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
@@ -108,10 +93,6 @@ export function ToolsPage() {
     setUrl('');
     setResult(null);
     setErrorKey(null);
-  }, []);
-
-  const handleSelectPlatform = useCallback((platform: SupportedPlatform) => {
-    setSelectedPlatform((current) => (current === platform.id ? null : platform.id));
   }, []);
 
   const handleSubmit = useCallback(
@@ -197,8 +178,7 @@ export function ToolsPage() {
 
   const currentPlaceholder = selectedPlatform
     ? t('tools.urlPlaceholderSelected', {
-        platform:
-          SUPPORTED_PLATFORMS.find((p) => p.id === selectedPlatform)?.name || '',
+        platform: selectedPlatform,
       })
     : t('tools.urlPlaceholder');
 
@@ -207,20 +187,33 @@ export function ToolsPage() {
       {/* Header */}
       <BlurFade delayMs={50}>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-surface-2 text-ink border border-line">
-              <Wrench className="size-4" strokeWidth={2.2} />
-            </span>
-            <AnimatedShinyText className="text-[12px] font-semibold uppercase tracking-wider">
-              {t('tools.tagline')}
-            </AnimatedShinyText>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-surface-2 text-ink border border-line">
+                  <Wrench className="size-4" strokeWidth={2.2} />
+                </span>
+                <AnimatedShinyText className="text-[12px] font-semibold uppercase tracking-wider">
+                  {t('tools.tagline')}
+                </AnimatedShinyText>
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                {t('tools.title')}
+              </h1>
+              <p className="text-sm leading-relaxed text-ink-muted">
+                {t('tools.subtitle')}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPlatformsSheetOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-3 py-1.5 text-xs font-semibold text-ink-soft hover:text-ink hover:bg-surface-3 transition-colors active:scale-95 shadow-xs"
+            >
+              <Globe className="size-3.5 text-primary" />
+              <span>{t('tools.viewSupportedPlatforms')}</span>
+            </button>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-            {t('tools.title')}
-          </h1>
-          <p className="text-sm leading-relaxed text-ink-muted">
-            {t('tools.subtitle')}
-          </p>
         </div>
       </BlurFade>
 
@@ -240,6 +233,22 @@ export function ToolsPage() {
       {/* Input Form Card */}
       <BlurFade delayMs={100}>
         <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5 shadow-xs">
+          {/* Active filter indicator */}
+          {selectedPlatform && (
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-2 border border-line/60 text-xs">
+              <span className="text-ink-muted">
+                {t('tools.activeFilter')} <strong className="text-ink font-mono">{selectedPlatform}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedPlatform(null)}
+                className="text-ink-muted hover:text-ink text-[11px] font-medium"
+              >
+                {t('tools.clearFilter')}
+              </button>
+            </div>
+          )}
+
           {/* Mode Selector */}
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 border border-line/60">
             <button
@@ -318,49 +327,17 @@ export function ToolsPage() {
             </Button>
           </form>
 
-          {/* Supported platforms with shadcn scroll-fade-x */}
-          <div className="flex flex-col gap-2 pt-1 border-t border-line/40">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium tracking-wide uppercase text-ink-muted">
-                {t('tools.supportedPlatforms')} ({SUPPORTED_PLATFORMS.length})
-              </span>
-              {selectedPlatform && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlatform(null)}
-                  className="text-[11px] text-ink-muted hover:text-ink transition-colors"
-                >
-                  {t('tools.clearFilter')}
-                </button>
-              )}
-            </div>
-
-            <div
-              tabIndex={0}
-              aria-label={t('tools.supportedPlatforms')}
-              className="scroll-fade-x no-scrollbar overflow-x-auto flex items-center gap-1.5 py-1.5 -mx-1 px-1 touch-pan-x"
+          {/* Supported platforms menu link (NOT underneath download menu as chips) */}
+          <div className="flex items-center justify-center pt-1 border-t border-line/40">
+            <button
+              type="button"
+              onClick={() => setPlatformsSheetOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors py-0.5 active:scale-95"
             >
-              {SUPPORTED_PLATFORMS.map((platform) => {
-                const isSelected = selectedPlatform === platform.id;
-                const Icon = getPlatformIcon(platform.category);
-                return (
-                  <button
-                    key={platform.id}
-                    type="button"
-                    onClick={() => handleSelectPlatform(platform)}
-                    className={cx(
-                      'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-150 select-none active:scale-95',
-                      isSelected
-                        ? 'bg-surface-3 text-ink border-ink/40 shadow-xs'
-                        : 'bg-surface-2 text-ink-muted border-line/60 hover:text-ink hover:bg-surface-3',
-                    )}
-                  >
-                    <Icon className="size-3 shrink-0" />
-                    <span>{platform.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+              <Globe className="size-3.5 text-primary" />
+              <span>{t('tools.supportedPlatformsCount', { count: ALL_SUPPORTED_SITES.length })}</span>
+              <span className="text-primary font-medium">({t('tools.viewAll')})</span>
+            </button>
           </div>
         </div>
       </BlurFade>
@@ -573,6 +550,17 @@ export function ToolsPage() {
           </div>
         </BlurFade>
       )}
+
+      {/* Supported Platforms Sheet Menu */}
+      <SupportedPlatformsSheet
+        open={platformsSheetOpen}
+        onClose={() => setPlatformsSheetOpen(false)}
+        selectedPlatform={selectedPlatform}
+        onSelectPlatform={(platformName) => {
+          setSelectedPlatform(platformName);
+          showToast(t('tools.platformSelected', { platform: platformName }), 'info');
+        }}
+      />
     </div>
   );
 }

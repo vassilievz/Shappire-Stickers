@@ -1,3 +1,12 @@
+import allSitesJson from './allSupportedSites.json';
+
+export interface SupportedSiteItem {
+  name: string;
+  desc?: string;
+}
+
+export const ALL_SUPPORTED_SITES: SupportedSiteItem[] = allSitesJson as SupportedSiteItem[];
+
 export interface SupportedPlatform {
   id: string;
   name: string;
@@ -8,7 +17,6 @@ export interface SupportedPlatform {
 
 /**
  * Curated list of public media platforms supported by yt-dlp.
- * Strictly excludes YouTube and all YouTube-related extractors.
  * Groups internal extractors, clips, stories, albums, and variants under their primary platform.
  */
 export const SUPPORTED_PLATFORMS: SupportedPlatform[] = [

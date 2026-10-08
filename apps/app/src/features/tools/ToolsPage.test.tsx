@@ -30,29 +30,30 @@ describe('ToolsPage', () => {
       </HashRouter>,
     );
 
-  it('renderiza o título, o campo de URL, o botão Colar e as plataformas', () => {
+  it('renderiza o título, o campo de URL, o botão Colar e o botão do menu de plataformas', () => {
     renderComponent();
 
     expect(screen.getByText('Shappire Tools')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /colar|paste/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^tiktok$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^instagram$/i })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: /plataformas suportadas|supported platforms/i }).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
-  it('não exibe YouTube na lista de plataformas suportadas', () => {
+  it('abre o menu de plataformas ao clicar no botão', async () => {
+    const user = userEvent.setup();
     renderComponent();
-    expect(screen.queryByText(/^youtube$/i)).toBeNull();
-    expect(screen.queryByText(/youtube/i)).toBeNull();
-  });
 
-  it('possui o container de plataformas com scroll-fade-x e no-scrollbar', () => {
-    const { container } = renderComponent();
-    const scrollContainer = container.querySelector('.scroll-fade-x');
+    const menuBtn = screen.getAllByRole('button', {
+      name: /plataformas suportadas|supported platforms/i,
+    })[0];
+    await user.click(menuBtn!);
 
-    expect(scrollContainer).not.toBeNull();
-    expect(scrollContainer?.classList.contains('no-scrollbar')).toBe(true);
-    expect(scrollContainer?.classList.contains('overflow-x-auto')).toBe(true);
+    // O modal abre exibindo o campo de busca de plataformas
+    expect(
+      screen.getByPlaceholderText(/buscar entre mais de 1.700 plataformas|search 1,700\+ platforms/i),
+    ).toBeInTheDocument();
   });
 
   it('insere a URL no campo ao clicar em Colar com sucesso', async () => {
@@ -86,13 +87,27 @@ describe('ToolsPage', () => {
     expect(showToastSpy).toHaveBeenCalledWith(expect.any(String), 'warning');
   });
 
-  it('permite selecionar um chip de plataforma sem bloquear a digitação livre', async () => {
+  it('permite selecionar uma plataforma no menu e digitar livremente qualquer URL', async () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const tiktokChip = screen.getByRole('button', { name: /tiktok/i });
-    await user.click(tiktokChip);
+    const menuBtn = screen.getAllByRole('button', {
+      name: /plataformas suportadas|supported platforms/i,
+    })[0];
+    await user.click(menuBtn!);
 
+    // Busca por tiktok no modal
+    const searchInput = screen.getByPlaceholderText(
+      /buscar entre mais de 1.700 plataformas|search 1,700\+ platforms/i,
+    );
+    await user.type(searchInput, 'tiktok');
+
+    // Clica em um item do menu
+    const tiktokOptions = await screen.findAllByRole('button', { name: /tiktok/i });
+    expect(tiktokOptions.length).toBeGreaterThan(0);
+    await user.click(tiktokOptions[0]!);
+
+    // O menu fecha e o input aceita digitação livre
     const input = screen.getByRole('textbox') as HTMLInputElement;
     await user.type(input, 'https://instagram.com/p/123');
     expect(input.value).toBe('https://instagram.com/p/123');

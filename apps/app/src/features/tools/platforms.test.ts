@@ -50,3 +50,32 @@ describe('SUPPORTED_PLATFORMS', () => {
     }
   });
 });
+
+describe('ALL_SUPPORTED_SITES', () => {
+  it('contém a totalidade das plataformas do yt-dlp (1.731 extratores)', async () => {
+    const { ALL_SUPPORTED_SITES } = await import('./platforms');
+    expect(ALL_SUPPORTED_SITES.length).toBe(1731);
+  });
+
+  it('todos os itens possuem nome válido não vazio', async () => {
+    const { ALL_SUPPORTED_SITES } = await import('./platforms');
+    for (const site of ALL_SUPPORTED_SITES) {
+      expect(site.name).toBeTruthy();
+      expect(typeof site.name).toBe('string');
+      expect(site.name.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('inclui serviços de referência do catálogo yt-dlp', async () => {
+    const { ALL_SUPPORTED_SITES } = await import('./platforms');
+    const names = ALL_SUPPORTED_SITES.map((s) => s.name.toLowerCase());
+    expect(names).toContain('tiktok');
+    expect(names).toContain('instagram');
+    expect(names).toContain('youtube');
+    expect(names).toContain('twitter');
+    expect(names).toContain('reddit');
+    expect(names).toContain('soundcloud');
+    expect(names).toContain('10play');
+  });
+});
+
