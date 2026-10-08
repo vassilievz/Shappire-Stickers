@@ -184,14 +184,16 @@ export function EmptyState({
   title,
   description,
   action,
+  className,
 }: {
   icon: ReactNode;
   title: string;
   description: string;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-12 text-center animate-fade-in">
+    <div className={cx('flex flex-col items-center justify-center px-6 py-12 text-center animate-fade-in', className)}>
       <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-line bg-surface text-ink-muted">
         {icon}
       </div>

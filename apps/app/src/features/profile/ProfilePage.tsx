@@ -200,16 +200,7 @@ export function ProfilePage() {
             icon={<UserRound className="size-6" aria-hidden />}
             title={t('profile.completeProfile')}
             description={t('profile.completeProfileDesc')}
-            action={
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => setEditOpen(true)}
-                icon={<Pencil className="size-4" aria-hidden />}
-              >
-                {t('profile.editProfile')}
-              </Button>
-            }
+            className="py-4"
           />
         </BlurFade>
       ) : null}
