@@ -39,7 +39,18 @@ jobs:
       - name: Run automated test suite
         run: npm run test
 
+      - name: Validate required build configuration
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::error::GitHub Actions Variable VITE_API_URL is missing or empty! Configure it in Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
+
       - name: Build web application bundle
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: npm run build
 
       - name: Verify build artifacts exist
