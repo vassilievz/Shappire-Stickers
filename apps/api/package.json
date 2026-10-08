@@ -1,0 +1,31 @@
+{
+  "name": "@shappire/api",
+  "version": "0.2.1",
+  "private": true,
+  "description": "API Shappire — Express + Firebase Admin + MongoDB + V0X",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@shappire/contracts": "file:./contracts",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.4.0",
+    "firebase-admin": "^13.0.0",
+    "helmet": "^8.0.0",
+    "multer": "^2.0.0",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
+  }
+}

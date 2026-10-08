@@ -48,8 +48,8 @@ apps/api/.env
 apps/api/.env.*
 !apps/api/.env.example
 
-# Backend / API privada (hospedada na Discloud, fora do repositório público)
-apps/api/
+# Backend / API — código público; segredos ficam somente em apps/api/.env (ignorado acima)
+apps/api/api.zip
 
 # OtaKit
 .otakit*

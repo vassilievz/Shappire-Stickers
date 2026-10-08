@@ -8,7 +8,7 @@ Built with React, TypeScript, Capacitor, and native Android components, it provi
 
 The optional profile system (display name, username, bio, avatar, banner) is a separate, non-essential feature for users who want a Shappire profile. Sticker creation never depends on it.
 
-> **Project Status:** `v0.2.1` — npm-workspaces monorepo (`apps/app`, `apps/api`, `packages/contracts`). The Android application is fully offline-first; the optional profile backend is intentionally kept private and is not required to build or use the app.
+> **Project Status:** `v0.2.1` — npm-workspaces monorepo (`apps/app`, `apps/api`, `packages/contracts`). The Android application is fully offline-first; the optional profile backend is now part of this public repository and is not required to build or use the app.
 
 ## Table of Contents
 
@@ -32,21 +32,23 @@ Shappire Stickers is organized as an npm-workspaces monorepo:
 ```text
 packages/contracts        Shared limits, routes and error codes (single source of truth)
 apps/app                  React + Capacitor Android app (offline-first)
-apps/api                  Optional profile backend (kept private)
+apps/api                  Optional profile backend (open source — not required by the app)
 ```
 
 ### Optional Profile Backend
 
-The optional profile backend lives in `apps/api`, but it is **intentionally not made publicly available in this repository**. It is not required by the core application and is responsible only for a small set of optional account/profile services. Keeping it private allows the public repository to remain focused on the offline-first Android application, without exposing infrastructure that is not required to build or use it.
+The optional profile backend lives in `apps/api` and is now **part of this public repository**, included primarily for transparency, auditability, contribution, and reproducibility of the online profile infrastructure. It is not required by the core application and is responsible only for a small set of optional account/profile services.
 
-Its responsibilities are limited to:
+Using the backend is entirely optional and separate from the main functionality: the app can be used without creating an account and without providing any data. Its responsibilities are limited to:
 
 - Storage of basic optional profile information — display name, username, bio, avatar, and banner.
 - Image metadata for profile pictures.
 - V0X integration for hosting profile images.
 - Optional Firebase Authentication for account/profile usage.
 
-The backend does **not** store sticker projects, sticker packs, edited stickers, edit files, editor data, or any other core application content. All sticker content remains exclusively on the device.
+The backend stores only minimal data. Profile images are hosted externally through V0X; MongoDB keeps only their metadata. The backend does **not** store sticker projects, sticker packs, edited stickers, edit files, editor data, or any other core application content — none of the user's projects, edits, packs, or main content is sent to the backend. All sticker content remains exclusively on the device.
+
+Production credentials are never committed: they remain outside Git and are supplied exclusively through environment variables (`apps/api/.env`, which is gitignored; a documented `.env.example` is provided). See `apps/api/README.md` for setup details.
 
 ```text
 apps/app (Android) ── Firebase ID token ──> apps/api (optional)
@@ -214,7 +216,7 @@ Build the production frontend:
 npm run build
 ```
 
-> Optional profile features (Google Login and profile editing) require a reachable Shappire API instance, configured through `VITE_API_URL` in `apps/app/.env`. The API is not part of the public distribution — every other feature works without it.
+> Optional profile features (Google Login and profile editing) require a reachable Shappire API instance, configured through `VITE_API_URL` in `apps/app/.env`. The API source is available in `apps/api` — it is optional and separate from the main functionality, and every other feature works without it.
 
 ### Quality Checks
 
@@ -293,7 +295,7 @@ Ensure that `JAVA_HOME` and the Android SDK environment are correctly configured
 │   │       ├── shared/          # Reusable components and utilities
 │   │       ├── state/           # Application state (auth, profile, library)
 │   │       └── styles/          # Design tokens and global styles
-│   └── api/                     # Optional profile backend (kept private — not publicly distributed)
+│   └── api/                     # Optional profile backend (open source — not required by the app)
 ├── packages/
 │   └── contracts/               # Shared limits, routes and error codes (app ↔ API)
 ├── package.json                 # npm workspaces root
