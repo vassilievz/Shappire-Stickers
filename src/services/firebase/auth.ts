@@ -15,6 +15,10 @@ import { AppError } from '@/shared/errors';
 
 const logger = createLogger('firebase-auth');
 
+// Diagnóstico temporário do fluxo de login (remover após confirmar a causa da lentidão).
+// eslint-disable-next-line no-console
+const authLog = (stage: string, detail = '') => console.info(`[AUTH] ${stage}${detail ? ` — ${detail}` : ''}`);
+
 function mapUser(user: User): AuthUser {
   return {
     uid: user.uid,
@@ -67,17 +71,21 @@ function handleAuthError(error: unknown): Error {
  */
 export async function signInWithGoogle(): Promise<AuthUser> {
   const auth = getFirebaseAuth();
+  const t0 = Date.now();
 
   try {
     if (Capacitor.isNativePlatform()) {
       logger.info('Iniciando Google Sign-In nativo via Capacitor...');
+      authLog('login iniciado (nativo)');
       const result = await FirebaseAuthentication.signInWithGoogle();
+      authLog('Google retornou', `+${Date.now() - t0}ms`);
 
       // Sincroniza o idToken nativo com a instância web do Firebase Auth
       // para que Firestore e Storage web tenham o token ativo.
       if (result.credential?.idToken) {
         const credential = GoogleAuthProvider.credential(result.credential.idToken);
         const userCredential = await signInWithCredential(auth, credential);
+        authLog('Firebase sign-in concluído (signInWithCredential)', `+${Date.now() - t0}ms`);
         logger.info('Usuário autenticado nativamente e sincronizado:', userCredential.user.uid);
         return mapUser(userCredential.user);
       }
@@ -101,9 +109,11 @@ export async function signInWithGoogle(): Promise<AuthUser> {
 
     // Ambiente Web / Desktop / Dev
     logger.info('Iniciando Google Sign-In web (popup)...');
+    authLog('login iniciado (web)');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     const userCredential = await signInWithPopup(auth, provider);
+    authLog('Firebase sign-in concluído (popup)', `+${Date.now() - t0}ms`);
     logger.info('Usuário autenticado no ambiente Web:', userCredential.user.uid);
     return mapUser(userCredential.user);
   } catch (error) {

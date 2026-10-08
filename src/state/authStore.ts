@@ -12,6 +12,21 @@ import { createLogger } from '@/services/logging/logger';
 
 const logger = createLogger('auth-store');
 
+// Diagnóstico temporário do fluxo de login (remover após confirmar a causa da lentidão).
+// console.info direto porque o logger do app filtra 'info' em build de produção e estes
+// logs precisam ser visíveis no APK via `adb logcat`.
+// eslint-disable-next-line no-console
+const authLog = (stage: string, detail = '') => console.info(`[AUTH] ${stage}${detail ? ` — ${detail}` : ''}`);
+
+function localProfile(user: AuthUser): UserProfile {
+  return {
+    uid: user.uid,
+    displayName: user.displayName || 'Usuário Shappire',
+    email: user.email || '',
+    photoURL: user.photoURL,
+  };
+}
+
 interface AuthState {
   user: AuthUser | null;
   profile: UserProfile | null;
@@ -44,32 +59,33 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     logger.debug('Inicializando listener de autenticação global...');
 
-    const unsubscribe = observeAuthState(async (user) => {
+    const unsubscribe = observeAuthState((user) => {
+      authLog('onAuthStateChanged disparou', user ? `uid=${user.uid}` : 'sem usuário');
       if (user) {
-        // Usuário logado: busca/sincroniza o perfil no Firestore
-        try {
-          const profile = await syncUserProfile(user);
-          set({
-            user,
-            profile,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
+        // Firebase Auth confirmou o usuário: publica o estado autenticado imediatamente.
+        // A sincronização do perfil no Firestore é secundária e roda em background,
+        // sem travar a UI em loading enquanto a rede responde.
+        set({
+          user,
+          profile: localProfile(user),
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        authLog('Zustand atualizado para autenticado');
+
+        const syncStart = Date.now();
+        authLog('perfil Firestore iniciado');
+        void syncUserProfile(user)
+          .then((profile) => {
+            authLog('perfil Firestore concluído', `${Date.now() - syncStart}ms`);
+            if (useAuthStore.getState().user?.uid === user.uid) {
+              set({ profile });
+            }
+          })
+          .catch((err) => {
+            logger.debug('Falha na sincronização de perfil em background:', err);
           });
-        } catch (err) {
-          logger.warn('Falha ao sincronizar perfil do usuário:', err);
-          set({
-            user,
-            profile: {
-              uid: user.uid,
-              displayName: user.displayName || 'Usuário Shappire',
-              email: user.email || '',
-              photoURL: user.photoURL,
-            },
-            isAuthenticated: true,
-            isLoading: false,
-          });
-        }
       } else {
         set({
           user: null,
@@ -88,36 +104,43 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signInWithGoogle: async () => {
     set({ isSigningIn: true, error: null });
+    authLog('login iniciado');
     void logAnalyticsEvent('login_started', { method: 'google' });
 
     try {
       const user = await firebaseSignInWithGoogle();
-      let profile: UserProfile = {
-        uid: user.uid,
-        displayName: user.displayName || 'Usuário Shappire',
-        email: user.email || '',
-        photoURL: user.photoURL,
-      };
+      authLog('Firebase sign-in concluído', `uid=${user.uid}`);
 
-      try {
-        profile = await syncUserProfile(user);
-      } catch (profErr) {
-        logger.debug('Falha não-bloqueante na sincronização inicial do Firestore:', profErr);
-      }
-
+      // Autenticação confirmada pelo Firebase: a UI muda para o estado logado
+      // imediatamente; a sincronização do Firestore roda em background.
       set({
         user,
-        profile,
+        profile: localProfile(user),
         isAuthenticated: true,
         isSigningIn: false,
         error: null,
       });
+      authLog('Zustand atualizado para autenticado (login)');
+
+      const syncStart = Date.now();
+      authLog('perfil Firestore iniciado (login)');
+      void syncUserProfile(user)
+        .then((profile) => {
+          authLog('perfil Firestore concluído (login)', `${Date.now() - syncStart}ms`);
+          if (useAuthStore.getState().user?.uid === user.uid) {
+            set({ profile });
+          }
+        })
+        .catch((profErr) => {
+          logger.debug('Falha não-bloqueante na sincronização do Firestore:', profErr);
+        });
 
       void logAnalyticsEvent('login_completed', { method: 'google' });
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Falha ao autenticar com o Google.';
       logger.warn('Falha no login com Google:', message);
+      authLog('login falhou', message);
       set({
         isSigningIn: false,
         error: message,
