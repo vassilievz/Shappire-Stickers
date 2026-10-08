@@ -25,4 +25,8 @@ describe('configuração do aplicativo', () => {
   it('permite manter projetos suficientes para a tela inicial', () => {
     expect(APP_LIMITS.maxStoredProjects).toBeGreaterThan(APP_LIMITS.recentProjects);
   });
+
+  it('possui o link oficial do Discord da comunidade configurado', () => {
+    expect(APP_INFO.discordCommunityUrl).toBe('https://discord.gg/DrWfKJnES5');
+  });
 });

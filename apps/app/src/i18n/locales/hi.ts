@@ -75,6 +75,9 @@ export const hi = {
     projectActions: 'प्रोजेक्ट क्रियाएं',
     archivedEmpty: 'कोई संग्रहीत प्रोजेक्ट नहीं।',
     referencesCleared: '{count} स्टिकर इस प्रोजेक्ट से अलग किए गए।',
+    communityTitle: 'Shappire समुदाय',
+    communityDesc: 'हमारे आधिकारिक Discord से जुड़ें: सवाल पूछें, सुझाव दें और स्टिकर शेयर करें।',
+    communityButton: 'Discord से जुड़ें',
   },
   packs: {
     title: 'पैक्स',

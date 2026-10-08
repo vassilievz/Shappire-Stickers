@@ -75,6 +75,9 @@ export const ptBR = {
     projectActions: 'Ações do projeto',
     archivedEmpty: 'Nenhum projeto arquivado.',
     referencesCleared: '{count} figurinha(s) de pacote desvinculadas deste projeto.',
+    communityTitle: 'Comunidade Shappire',
+    communityDesc: 'Participe do nosso Discord oficial: tire dúvidas, envie sugestões e compartilhe figurinhas.',
+    communityButton: 'Entrar no Discord',
   },
   packs: {
     title: 'Pacotes',

@@ -75,6 +75,9 @@ export const it = {
     projectActions: 'Azioni del progetto',
     archivedEmpty: 'Nessun progetto archiviato.',
     referencesCleared: '{count} sticker scollegati da questo progetto.',
+    communityTitle: 'Community Shappire',
+    communityDesc: 'Unisciti al nostro Discord ufficiale: fai domande, invia feedback e condividi sticker.',
+    communityButton: 'Entra su Discord',
   },
   packs: {
     title: 'Pacchetti',

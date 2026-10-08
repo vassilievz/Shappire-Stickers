@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   Archive,
   ChevronRight,
+  ExternalLink,
   EyeOff,
   FolderOpen,
   FolderPlus,
+  MessageSquare,
   MoreVertical,
   Package,
   PenLine,
@@ -297,6 +299,43 @@ export function HomePage() {
               ))}
             </ul>
           )}
+        </section>
+      </BlurFade>
+
+      <BlurFade delayMs={240} durationMs={320}>
+        <section className="flex flex-col gap-3">
+          <SectionTitle title={t('home.communityTitle')} />
+          <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-4.5 sm:p-5 shadow-xs transition-colors hover:border-line-focus">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-[#5865F2]/15 text-[#5865F2] border border-[#5865F2]/25">
+                  <MessageSquare className="size-5" aria-hidden />
+                </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
+                      Discord Shappire
+                    </span>
+                    <Badge tone="focus">Oficial</Badge>
+                  </div>
+                  <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">
+                    {t('home.communityDesc')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => window.open(APP_INFO.discordCommunityUrl, '_blank', 'noopener,noreferrer')}
+                icon={<ExternalLink className="size-3.5" aria-hidden />}
+              >
+                {t('home.communityButton')}
+              </Button>
+            </div>
+          </div>
         </section>
       </BlurFade>
 
