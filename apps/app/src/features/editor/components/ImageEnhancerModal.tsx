@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Sparkles,
   Download,
@@ -86,9 +87,17 @@ export function ImageEnhancerModal({
 
     // Bloqueia a rolagem do fundo (background scroll lock)
     const prevOverflow = document.body.style.overflow;
+    const prevPosition = document.body.style.position;
+    const prevWidth = document.body.style.width;
+
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     return () => {
       document.body.style.overflow = prevOverflow;
+      document.body.style.position = prevPosition;
+      document.body.style.width = prevWidth;
     };
   }, [open, loadStatuses]);
 
@@ -170,16 +179,16 @@ export function ImageEnhancerModal({
 
   if (!open) return null;
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="ai-enhancer-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-hidden"
+      className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center sm:items-center bg-black/85 backdrop-blur-md overflow-hidden"
     >
-      <div className="relative flex h-[96dvh] max-h-[96dvh] w-full max-w-2xl flex-col rounded-2xl border border-line bg-surface shadow-2xl overflow-hidden">
+      <div className="relative flex flex-col w-full h-[100dvh] sm:h-auto sm:max-h-[90dvh] sm:max-w-2xl bg-surface sm:rounded-2xl border-0 sm:border sm:border-line shadow-2xl overflow-hidden">
         {/* Header Fixo */}
-        <div className="shrink-0 flex items-center justify-between border-b border-line bg-surface/95 backdrop-blur px-4 py-3 sm:px-5 sm:py-3.5 z-10">
+        <div className="shrink-0 flex items-center justify-between border-b border-line bg-surface/95 backdrop-blur px-4 py-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] sm:pt-3.5 sm:px-5 sm:py-3.5 z-10">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" />
@@ -412,7 +421,7 @@ export function ImageEnhancerModal({
               </div>
 
               {/* Quadro de Imagem com fundo xadrez (transparência) */}
-              <div className="relative mx-auto flex h-64 w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-[linear-gradient(45deg,#1f2228_25%,transparent_25%),linear-gradient(-45deg,#1f2228_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1f2228_75%),linear-gradient(-45deg,transparent_75%,#1f2228_75%)] bg-[size:16px_16px] bg-[#14161a]">
+              <div className="relative mx-auto flex h-44 sm:h-64 w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-[linear-gradient(45deg,#1f2228_25%,transparent_25%),linear-gradient(-45deg,#1f2228_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1f2228_75%),linear-gradient(-45deg,transparent_75%,#1f2228_75%)] bg-[size:16px_16px] bg-[#14161a]">
                 {!enhancementResult || viewMode === 'original' ? (
                   <img
                     src={sourceImageSrc}
@@ -473,8 +482,8 @@ export function ImageEnhancerModal({
           )}
         </div>
 
-        {/* Footer Fixo Sempre Visível */}
-        <div className="shrink-0 flex items-center justify-between border-t border-line bg-surface/95 backdrop-blur px-4 py-3 sm:px-5 sm:py-3.5 safe-bottom z-10">
+        {/* Footer Fixo Sempre Visível no Rodapé, acima de qualquer barra */}
+        <div className="shrink-0 flex items-center justify-between border-t border-line bg-surface/98 backdrop-blur px-4 py-3 sm:px-5 sm:py-3.5 pb-[calc(env(safe-area-inset-bottom,0px)+14px)] sm:pb-3.5 z-20">
           <div>
             {enhancementResult ? (
               <Button
@@ -522,4 +531,6 @@ export function ImageEnhancerModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
