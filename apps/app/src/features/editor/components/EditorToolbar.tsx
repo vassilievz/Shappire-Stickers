@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Scissors,
   SlidersHorizontal,
+  Sparkles,
   Trash2,
   Type,
   Undo2,
@@ -47,6 +48,7 @@ export interface EditorToolbarProps {
   onMaskBrushSizeChange: (size: number) => void;
   onImportImage: () => void;
   onOpenCropper?: () => void;
+  onOpenEnhancer?: () => void;
   onOpenTemplates?: () => void;
   onOpenProperties: () => void;
   onOpenLayers: () => void;
@@ -70,6 +72,7 @@ export function EditorToolbar({
   onMaskBrushSizeChange,
   onImportImage,
   onOpenCropper,
+  onOpenEnhancer,
   onOpenTemplates,
   onOpenProperties,
   onOpenLayers,
@@ -214,6 +217,16 @@ export function EditorToolbar({
                   icon={<Crop className="size-4" aria-hidden />}
                 >
                   {t('editor.toolbar.crop')}
+                </Button>
+              ) : null}
+              {hasImageSelection && onOpenEnhancer ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onOpenEnhancer}
+                  icon={<Sparkles className="size-4 text-accent" aria-hidden />}
+                >
+                  {t('editor.properties.enhanceButton')}
                 </Button>
               ) : null}
               <Button

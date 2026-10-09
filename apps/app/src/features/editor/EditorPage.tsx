@@ -385,6 +385,11 @@ export function EditorPage() {
             void handleOpenCropper(selectedElement);
           }
         }}
+        onOpenEnhancer={() => {
+          if (selectedElement?.kind === 'image') {
+            void handleOpenEnhancer(selectedElement);
+          }
+        }}
         onOpenProperties={() => setPropertiesOpen(true)}
         onOpenLayers={() => setLayersOpen(true)}
         onClearDrawing={clearDrawingLayer}
