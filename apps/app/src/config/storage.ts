@@ -15,6 +15,8 @@ export const STORAGE_ROOT = {
   
   cacheDir: 'cache',
   
+  modelsDir: 'ai_models',
+  
   tempDir: 'tmp',
 } as const;
 

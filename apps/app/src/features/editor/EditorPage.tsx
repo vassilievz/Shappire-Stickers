@@ -12,6 +12,7 @@ import { EditorLayersPanel } from './components/EditorLayersPanel';
 import { EditorPropertiesPanel } from './components/EditorPropertiesPanel';
 import { EditorExportSheet } from './components/EditorExportSheet';
 import { ImageCropperModal } from './components/ImageCropperModal';
+import { ImageEnhancerModal } from './components/ImageEnhancerModal';
 import { StickerTemplatesModal } from './components/StickerTemplatesModal';
 import {
   addImageFromDataUrlToCanvas,
@@ -47,6 +48,9 @@ export function EditorPage() {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [cropperTargetElementId, setCropperTargetElementId] = useState<string | null>(null);
+  const [enhancerOpen, setEnhancerOpen] = useState(false);
+  const [enhancerImageSrc, setEnhancerImageSrc] = useState<string | null>(null);
+  const [enhancerTargetElementId, setEnhancerTargetElementId] = useState<string | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [showSafeArea, setShowSafeArea] = useState(false);
 
@@ -202,6 +206,41 @@ export function EditorPage() {
       showToast(t('editor.cropper.loadError'), 'error');
     }
   }, [t]);
+
+  const handleOpenEnhancer = useCallback(async (element: ImageElement) => {
+    try {
+      const dataUrl = await readAssetDataUrlByPath(element.assetPath);
+      setEnhancerImageSrc(dataUrl);
+      setEnhancerTargetElementId(element.id);
+      setEnhancerOpen(true);
+      setPropertiesOpen(false);
+    } catch {
+      showToast(t('editor.cropper.loadError'), 'error');
+    }
+  }, [t]);
+
+  const handleEnhanceConfirm = useCallback(
+    async (enhancedDataUrl: string) => {
+      if (enhancerTargetElementId) {
+        const img = new Image();
+        img.src = enhancedDataUrl;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
+        await applyCroppedImageToElement(enhancerTargetElementId, {
+          dataUrl: enhancedDataUrl,
+          width: img.width,
+          height: img.height,
+        });
+        setRasterNonce((value) => value + 1);
+        showToast(t('editor.cropper.cropApplied'), 'success');
+      }
+      setEnhancerOpen(false);
+      setEnhancerImageSrc(null);
+      setEnhancerTargetElementId(null);
+    },
+    [enhancerTargetElementId, t],
+  );
 
   const handleCropperConfirm = useCallback(
     async (cropResult: { dataUrl: string; width: number; height: number }) => {
@@ -367,6 +406,7 @@ export function EditorPage() {
           onAddText={handleAddText}
           onImportImage={() => void handleImport()}
           onOpenCropper={(el) => void handleOpenCropper(el)}
+          onOpenEnhancer={(el) => void handleOpenEnhancer(el)}
         />
       </BottomSheet>
 
@@ -376,6 +416,17 @@ export function EditorPage() {
         open={templatesOpen}
         onClose={() => setTemplatesOpen(false)}
         onSelect={(dataUrl, name) => void handleAddTemplate(dataUrl, name)}
+      />
+
+      <ImageEnhancerModal
+        open={enhancerOpen}
+        sourceImageSrc={enhancerImageSrc}
+        onApply={(enhancedUrl) => void handleEnhanceConfirm(enhancedUrl)}
+        onClose={() => {
+          setEnhancerOpen(false);
+          setEnhancerImageSrc(null);
+          setEnhancerTargetElementId(null);
+        }}
       />
 
       <ImageCropperModal

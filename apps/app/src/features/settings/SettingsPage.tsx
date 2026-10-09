@@ -19,7 +19,7 @@ import {
   User,
   UserRound,
 } from 'lucide-react';
-import { Badge, Button, Divider, SectionTitle } from '@/shared/components/primitives';
+import { Badge, Button, SectionTitle } from '@/shared/components/primitives';
 import { SegmentedControl, SwitchField, TextInput } from '@/shared/components/inputs';
 import { BottomSheet, ConfirmDialog, Modal } from '@/shared/components/overlays';
 import { cx } from '@/shared/utils/cx';
@@ -299,13 +299,13 @@ export function SettingsPage() {
       </header>
 
       <BlurFade durationMs={300} delayMs={0}>
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-2.5">
           <SectionTitle
             title={t('settings.account')}
             description={t('settings.accountDesc')}
             action={isAuthenticated ? <Badge tone="neutral">{t('settings.connected')}</Badge> : undefined}
           />
-          <div className="flex flex-col gap-3.5 rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
+          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-3.5">
             <div className="flex items-center gap-3 min-w-0">
               {isAuthenticated && user ? (
                 user.photoURL ? (
@@ -380,299 +380,300 @@ export function SettingsPage() {
         </section>
       </BlurFade>
 
-      <Divider />
-
-      <BlurFade durationMs={300} delayMs={60}>
-        <div className="flex flex-col gap-7">
-          <GroupLabel>{t('settings.appSection')}</GroupLabel>
-
-          <section className="flex flex-col gap-3">
-            <SectionTitle title={t('settings.language')} />
+      {/* 1. APARÊNCIA */}
+      <BlurFade durationMs={300} delayMs={40}>
+        <section className="flex flex-col gap-2.5">
+          <GroupLabel>{t('settings.appearance')}</GroupLabel>
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+            {/* Linha de Idioma */}
             <button
               type="button"
               onClick={() => setLangSheetOpen(true)}
-              className="flex h-13 w-full items-center justify-between rounded-[var(--radius-card)] border border-line bg-surface px-4 text-left transition-colors hover:border-focus/40 hover:bg-surface-2 active:bg-surface-3 cursor-pointer shadow-xs"
+              className="flex w-full items-center justify-between border-b border-line/60 px-4 py-3 text-left transition-colors hover:bg-surface-2 active:bg-surface-3 cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-[22px] leading-none select-none shrink-0" aria-hidden>
+                <span className="text-[20px] leading-none select-none shrink-0" aria-hidden>
                   {currentLang.flag}
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="truncate text-[14px] font-medium text-ink">
-                    {currentLang.label}
-                  </span>
-                  <span className="text-[11px] text-ink-muted">
-                    {t('settings.language')}
-                  </span>
+                  <span className="text-[13.5px] font-medium text-ink">{t('settings.language')}</span>
+                  <span className="text-[11.5px] text-ink-muted">{currentLang.label}</span>
                 </div>
               </div>
               <ChevronDown className="size-4 shrink-0 text-ink-muted" aria-hidden />
             </button>
-          </section>
 
-          <section className="flex flex-col gap-4">
-            <SectionTitle title={t('settings.appearance')} />
-            <SegmentedControl<ThemePreference>
-              label={t('settings.theme')}
-              value={settings.theme}
-              options={themeOptions}
-              onChange={(theme) => void update({ theme })}
-            />
-            <SwitchField
-              label={t('settings.transparencyGrid')}
-              description={t('settings.transparencyGridDesc')}
-              checked={settings.showTransparencyGrid}
-              onChange={(showTransparencyGrid) => void update({ showTransparencyGrid })}
-            />
-          </section>
+            {/* Tema */}
+            <div className="border-b border-line/60 px-4 py-3">
+              <SegmentedControl<ThemePreference>
+                label={t('settings.theme')}
+                value={settings.theme}
+                options={themeOptions}
+                onChange={(theme) => void update({ theme })}
+              />
+            </div>
 
-          <section className="flex flex-col gap-4">
-            <SectionTitle title={t('settings.editorAndPacks')} />
-            <SwitchField
-              label={t('settings.confirmDeletions')}
-              description={t('settings.confirmDeletionsDesc')}
-              checked={settings.confirmDestructiveActions}
-              onChange={(confirmDestructiveActions) => void update({ confirmDestructiveActions })}
-            />
-            <div className="rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
-              <p className="text-[13px] font-medium text-ink">{t('settings.whatsAppLimits')}</p>
-              <ul className="mt-1.5 flex flex-col gap-1 text-[12px] leading-relaxed text-ink-muted">
-                <li>{t('settings.limitSticker')}</li>
-                <li>{t('settings.limitPack')}</li>
-                <li>{t('settings.limitTray')}</li>
+            {/* Grade de transparência */}
+            <div className="px-4 py-2">
+              <SwitchField
+                label={t('settings.transparencyGrid')}
+                description={t('settings.transparencyGridDesc')}
+                checked={settings.showTransparencyGrid}
+                onChange={(showTransparencyGrid) => void update({ showTransparencyGrid })}
+              />
+            </div>
+          </div>
+        </section>
+      </BlurFade>
+
+      {/* 2. EDITOR & CRIAÇÃO */}
+      <BlurFade durationMs={300} delayMs={70}>
+        <section className="flex flex-col gap-2.5">
+          <GroupLabel>{t('settings.editorAndPacks')}</GroupLabel>
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+            {/* Confirmar exclusões */}
+            <div className="border-b border-line/60 px-4 py-2">
+              <SwitchField
+                label={t('settings.confirmDeletions')}
+                description={t('settings.confirmDeletionsDesc')}
+                checked={settings.confirmDestructiveActions}
+                onChange={(confirmDestructiveActions) => void update({ confirmDestructiveActions })}
+              />
+            </div>
+
+            {/* Diagnóstico de desempenho */}
+            <div className="border-b border-line/60 px-4 py-2">
+              <SwitchField
+                label={t('settings.diagnostics')}
+                description={t('settings.diagnosticsDesc')}
+                checked={settings.performanceDiagnostics}
+                onChange={(performanceDiagnostics) => void update({ performanceDiagnostics })}
+              />
+            </div>
+
+            {/* Limites do WhatsApp */}
+            <div className="bg-surface-2/40 px-4 py-3">
+              <p className="text-[12.5px] font-medium text-ink">{t('settings.whatsAppLimits')}</p>
+              <ul className="mt-1 flex flex-col gap-0.5 text-[11.5px] leading-relaxed text-ink-muted">
+                <li>• {t('settings.limitSticker')}</li>
+                <li>• {t('settings.limitPack')}</li>
+                <li>• {t('settings.limitTray')}</li>
               </ul>
             </div>
-            <SwitchField
-              label={t('settings.diagnostics')}
-              description={t('settings.diagnosticsDesc')}
-              checked={settings.performanceDiagnostics}
-              onChange={(performanceDiagnostics) => void update({ performanceDiagnostics })}
-            />
-          </section>
-
-          <section className="flex flex-col gap-4">
-            <SectionTitle
-              title={t('settings.attribution')}
-              description={t('settings.attributionDesc')}
-            />
-            <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
-              <TextInput
-                label={t('settings.authorName')}
-                name="settings-author-display-name"
-                value={settings.authorDisplayName}
-                maxLength={24}
-                placeholder="Vassiliev"
-                onChange={(e) => void update({ authorDisplayName: e.target.value.slice(0, 24) })}
-                hint={t('settings.authorNameHint')}
-              />
-              <p className="mt-3 flex items-center justify-center gap-x-1.5 rounded-[10px] border border-line bg-surface-2 px-3 py-2.5 text-center text-[12px] text-ink-soft">
-                <span className="font-medium text-ink">{settings.authorDisplayName.trim() || 'Vassiliev'}</span>
-                <span aria-hidden className="text-ink-muted">·</span>
-                <span className="text-ink-muted">{INSTAGRAM_LABEL}</span>
-                <span aria-hidden className="text-ink-muted">·</span>
-                <span className="font-medium text-ink">{INSTAGRAM_HANDLE}</span>
-              </p>
-            </div>
-          </section>
-        </div>
-      </BlurFade>
-
-      <Divider />
-
-      <BlurFade durationMs={300} delayMs={90}>
-        <div className="flex flex-col gap-3">
-          <GroupLabel>{t('settings.privacy')}</GroupLabel>
-          <div className="flex items-start gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
-            <Shield className="mt-0.5 size-4 shrink-0 text-ink-muted" aria-hidden />
-            <p className="text-[13px] leading-relaxed text-ink-soft">{t('settings.privacyDesc')}</p>
           </div>
-        </div>
+        </section>
       </BlurFade>
 
-      <Divider />
+      {/* 3. ATRIBUIÇÃO */}
+      <BlurFade durationMs={300} delayMs={100}>
+        <section className="flex flex-col gap-2.5">
+          <GroupLabel>{t('settings.attribution')}</GroupLabel>
+          <div className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+            <TextInput
+              label={t('settings.authorName')}
+              name="settings-author-display-name"
+              value={settings.authorDisplayName}
+              maxLength={24}
+              placeholder="Vassiliev"
+              onChange={(e) => void update({ authorDisplayName: e.target.value.slice(0, 24) })}
+              hint={t('settings.authorNameHint')}
+            />
+            <p className="mt-3 flex items-center justify-center gap-x-1.5 rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-center text-[11.5px] text-ink-soft">
+              <span className="font-medium text-ink">{settings.authorDisplayName.trim() || 'Vassiliev'}</span>
+              <span aria-hidden className="text-ink-muted">·</span>
+              <span className="text-ink-muted">{INSTAGRAM_LABEL}</span>
+              <span aria-hidden className="text-ink-muted">·</span>
+              <span className="font-medium text-ink">{INSTAGRAM_HANDLE}</span>
+            </p>
+          </div>
+        </section>
+      </BlurFade>
 
-      <BlurFade durationMs={300} delayMs={120}>
-        <div className="flex flex-col gap-3">
-          <GroupLabel>{t('settings.dataSection')}</GroupLabel>
-          <SectionTitle
-            title={t('settings.storage')}
-            description={t('settings.storageDesc')}
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={storageLoading}
-                onClick={refreshStorage}
-                icon={<RefreshCw className="size-3.5" aria-hidden />}
-              >
-                {t('settings.storageRefresh')}
-              </Button>
-            }
-          />
-          <div className="overflow-hidden rounded-[var(--radius-control)] border border-line bg-surface">
+      {/* 4. ARMAZENAMENTO */}
+      <BlurFade durationMs={300} delayMs={130}>
+        <section className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between px-1">
+            <GroupLabel>{t('settings.storage')}</GroupLabel>
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={storageLoading}
+              onClick={refreshStorage}
+              icon={<RefreshCw className="size-3.5" aria-hidden />}
+            >
+              {t('settings.storageRefresh')}
+            </Button>
+          </div>
+
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
             {storage ? (
               <>
                 {storageRows.map((row) => (
                   <div
                     key={row.label}
-                    className="flex items-center justify-between border-b border-line/60 px-3.5 py-2.5 last:border-b-0"
+                    className="flex items-center justify-between border-b border-line/60 px-4 py-2.5 last:border-b-0"
                   >
                     <span className="text-[13px] text-ink-soft">{row.label}</span>
                     <span className="text-[13px] font-medium tabular-nums text-ink">
-                      {row.bytes > 0 ? formatBytes(row.bytes) : '—'}
+                      {row.bytes > 0 ? formatBytes(row.bytes) : '0 B'}
                     </span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between bg-surface-2/60 px-3.5 py-3">
+                <div className="flex items-center justify-between bg-surface-2/60 px-4 py-3">
                   <span className="flex items-center gap-2 text-[13px] font-medium text-ink">
-                    <HardDrive className="size-4" aria-hidden />
+                    <HardDrive className="size-4 text-ink-muted" aria-hidden />
                     {t('settings.storageTotal')}
                   </span>
-                  <span className="text-[14px] font-semibold tabular-nums text-ink">
+                  <span className="text-[13.5px] font-semibold tabular-nums text-ink">
                     {formatBytes(storage.totalBytes)}
                   </span>
                 </div>
               </>
             ) : (
-              <p className="px-3.5 py-3 text-[13px] text-ink-muted">{t('settings.storageUnavailable')}</p>
+              <p className="px-4 py-3 text-[13px] text-ink-muted">{t('settings.storageUnavailable')}</p>
             )}
           </div>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
               variant="secondary"
+              size="sm"
               fullWidth
               onClick={() => void requestCleanup('cache')}
-              icon={<Trash2 className="size-4" aria-hidden />}
+              icon={<Trash2 className="size-3.5" aria-hidden />}
             >
               {t('settings.cleanupCacheAction')}
             </Button>
             <Button
               variant="quiet"
+              size="sm"
               fullWidth
               onClick={() => void requestCleanup('temp')}
-              icon={<Trash2 className="size-4" aria-hidden />}
+              icon={<Trash2 className="size-3.5" aria-hidden />}
             >
               {t('settings.cleanupTempAction')}
             </Button>
           </div>
-        </div>
+        </section>
       </BlurFade>
 
-      <Divider />
-
-      <BlurFade durationMs={300} delayMs={150}>
-        <div className="flex flex-col gap-6">
-          <GroupLabel>{t('settings.about')}</GroupLabel>
-
-          <section className="flex flex-col gap-3">
-            <SectionTitle
-              title={t('settings.updates')}
-              description={t('settings.updatesDesc')}
-            />
-            <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-line bg-surface p-3.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-[13px] text-ink-soft">
-                  <Download className="size-4 text-ink-muted" aria-hidden />
-                  {t('settings.currentVersion')}
-                </span>
-                <Badge tone="neutral">
-                  v{otaStatus?.currentVersion || APP_INFO.version}
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 border-t border-line/60">
-                <span className="text-[13px] text-ink-soft">
-                  {t('settings.updateStatus')}
-                </span>
-                <span className="text-[12px] font-medium text-ink-muted">
-                  {otaCheckState === 'checking' && t('settings.checkingUpdates')}
-                  {otaCheckState === 'downloading' && t('settings.downloadingUpdate')}
-                  {otaCheckState === 'update_available' && `${t('settings.updateAvailable')} (v${availableOtaVersion})`}
-                  {otaCheckState === 'ready' && t('settings.updateReady')}
-                  {(otaCheckState === 'idle' || otaCheckState === 'up_to_date') && t('settings.upToDate')}
-                  {otaCheckState === 'error' && (otaErrorMessage || t('settings.updateError'))}
-                </span>
-              </div>
-
-              {otaCheckState === 'ready' && (
-                <div className="mt-1 rounded-[10px] bg-surface-2 p-2.5 text-[12px] leading-relaxed text-ink-muted">
-                  {t('settings.updateReadyDesc')}
-                </div>
-              )}
-
-              <div className="pt-2">
-                {otaCheckState === 'update_available' || otaCheckState === 'downloading' ? (
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    loading={otaCheckState === 'downloading'}
-                    onClick={() => void handleDownloadUpdate()}
-                    icon={<Download className="size-4" aria-hidden />}
-                  >
-                    {otaCheckState === 'downloading' ? t('settings.downloadingUpdate') : t('settings.updateNow')}
-                  </Button>
-                ) : otaCheckState === 'ready' ? (
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={() => void handleRestart()}
-                    icon={<RefreshCw className="size-4" aria-hidden />}
-                  >
-                    {t('settings.restartNow')}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    fullWidth
-                    loading={otaCheckState === 'checking'}
-                    onClick={() => void handleCheckUpdates()}
-                    icon={<RefreshCw className="size-4" aria-hidden />}
-                  >
-                    {t('settings.checkForUpdates')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
+      {/* 5. ATUALIZAÇÕES */}
+      <BlurFade durationMs={300} delayMs={160}>
+        <section className="flex flex-col gap-2.5">
+          <GroupLabel>{t('settings.updates')}</GroupLabel>
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+            <div className="flex items-center justify-between border-b border-line/60 px-4 py-3">
               <span className="flex items-center gap-2 text-[13px] text-ink-soft">
-                <Sticker className="size-4" aria-hidden /> {t('settings.version')}
+                <Download className="size-4 text-ink-muted" aria-hidden />
+                {t('settings.currentVersion')}
               </span>
               <Badge tone="neutral">v{otaStatus?.currentVersion || APP_INFO.version}</Badge>
             </div>
-            <div className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
+
+            <div className="flex items-center justify-between border-b border-line/60 px-4 py-3">
+              <span className="text-[13px] text-ink-soft">{t('settings.updateStatus')}</span>
+              <span className="text-[12px] font-medium text-ink-muted">
+                {otaCheckState === 'checking' && t('settings.checkingUpdates')}
+                {otaCheckState === 'downloading' && t('settings.downloadingUpdate')}
+                {otaCheckState === 'update_available' && `${t('settings.updateAvailable')} (v${availableOtaVersion})`}
+                {otaCheckState === 'ready' && t('settings.updateReady')}
+                {(otaCheckState === 'idle' || otaCheckState === 'up_to_date') && t('settings.upToDate')}
+                {otaCheckState === 'error' && (otaErrorMessage || t('settings.updateError'))}
+              </span>
+            </div>
+
+            {otaCheckState === 'ready' && (
+              <div className="bg-surface-2/60 px-4 py-2.5 text-[12px] leading-relaxed text-ink-muted">
+                {t('settings.updateReadyDesc')}
+              </div>
+            )}
+
+            <div className="p-3">
+              {otaCheckState === 'update_available' || otaCheckState === 'downloading' ? (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  loading={otaCheckState === 'downloading'}
+                  onClick={() => void handleDownloadUpdate()}
+                  icon={<Download className="size-4" aria-hidden />}
+                >
+                  {otaCheckState === 'downloading' ? t('settings.downloadingUpdate') : t('settings.updateNow')}
+                </Button>
+              ) : otaCheckState === 'ready' ? (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={() => void handleRestart()}
+                  icon={<RefreshCw className="size-4" aria-hidden />}
+                >
+                  {t('settings.restartNow')}
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  loading={otaCheckState === 'checking'}
+                  onClick={() => void handleCheckUpdates()}
+                  icon={<RefreshCw className="size-4" aria-hidden />}
+                >
+                  {t('settings.checkForUpdates')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
+      </BlurFade>
+
+      {/* 6. SOBRE & AVANÇADO */}
+      <BlurFade durationMs={300} delayMs={190}>
+        <section className="flex flex-col gap-2.5">
+          <GroupLabel>{t('settings.about')}</GroupLabel>
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+            {/* Privacidade */}
+            <div className="flex items-start gap-3 border-b border-line/60 px-4 py-3">
+              <Shield className="mt-0.5 size-4 shrink-0 text-ink-muted" aria-hidden />
+              <p className="text-[12.5px] leading-relaxed text-ink-muted">{t('settings.privacyDesc')}</p>
+            </div>
+
+            {/* Licença */}
+            <div className="flex items-center justify-between border-b border-line/60 px-4 py-3">
               <span className="flex items-center gap-2 text-[13px] text-ink-soft">
-                <Info className="size-4" aria-hidden /> {t('settings.license')}
+                <Info className="size-4 text-ink-muted" aria-hidden /> {t('settings.license')}
               </span>
               <span className="text-[13px] font-medium text-ink">{APP_INFO.licenseName}</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+            {/* Ações de código e licenças */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-b border-line/60">
               <Button
                 variant="quiet"
+                size="sm"
                 fullWidth
                 onClick={() => setLicensesOpen(true)}
-                icon={<CheckCircle2 className="size-4" aria-hidden />}
+                icon={<CheckCircle2 className="size-3.5" aria-hidden />}
               >
                 {t('settings.openSourceLicenses')}
               </Button>
               <Button
                 variant="secondary"
+                size="sm"
                 fullWidth
                 onClick={openRepository}
-                icon={<ExternalLink className="size-4" aria-hidden />}
+                icon={<ExternalLink className="size-3.5" aria-hidden />}
               >
                 {t('settings.viewSource')}
               </Button>
             </div>
-            <p className="flex items-start gap-2 text-[12px] leading-relaxed text-ink-muted pt-1">
-              <Palette className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-              {t('settings.whatsAppDisclaimer')}
-            </p>
-          </section>
-        </div>
+
+            {/* Disclaimer WhatsApp */}
+            <div className="px-4 py-2.5 bg-surface-2/30">
+              <p className="flex items-start gap-2 text-[11.5px] leading-relaxed text-ink-muted">
+                <Palette className="mt-0.5 size-3 shrink-0" aria-hidden />
+                {t('settings.whatsAppDisclaimer')}
+              </p>
+            </div>
+          </div>
+        </section>
       </BlurFade>
 
       <footer className="mt-6 flex flex-col items-center justify-center border-t border-line/40 pt-7 pb-2 text-center select-none">

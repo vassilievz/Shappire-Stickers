@@ -54,6 +54,22 @@ export function profileCachePath(uid: string): string {
   return `library/profile-${uid}.json`;
 }
 
+export function modelsDirectory(): string {
+  return STORAGE_ROOT.modelsDir;
+}
+
+export function modelWeightsPath(modelId: string): string {
+  return `${STORAGE_ROOT.modelsDir}/${modelId}.onnx`;
+}
+
+export function modelTempWeightsPath(modelId: string): string {
+  return `${STORAGE_ROOT.tempDir}/${modelId}.onnx.part`;
+}
+
+export function modelManifestPath(): string {
+  return `${STORAGE_ROOT.modelsDir}/manifest.json`;
+}
+
 
 export function baseName(path: string): string {
   const segments = path.split('/');

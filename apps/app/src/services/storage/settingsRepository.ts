@@ -22,6 +22,9 @@ export interface AppSettings {
 
   /** Nome de exibição do autor mostrado ABAIXO da figurinha na tela de detalhe. Não é gravado na imagem. */
   authorDisplayName: string;
+
+  /** Modelo de IA padrão selecionado pelo usuário para melhoria de imagens. */
+  defaultAiModelId: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -33,6 +36,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   performanceDiagnostics: false,
   lastRoute: '/inicio',
   authorDisplayName: 'Vassiliev',
+  defaultAiModelId: 'realesr-anime-v3-4x',
 };
 
 interface SettingsDocument {
@@ -85,6 +89,10 @@ function sanitize(value: Partial<AppSettings> | null | undefined): AppSettings {
               .slice(0, 24)
               .trim()
           : DEFAULT_SETTINGS.authorDisplayName,
+    defaultAiModelId:
+      typeof value.defaultAiModelId === 'string'
+        ? value.defaultAiModelId
+        : DEFAULT_SETTINGS.defaultAiModelId,
   };
 }
 

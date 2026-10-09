@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 /**
  * Configuração do Vite para o frontend (React + TypeScript + Tailwind).
@@ -10,7 +11,19 @@ import tailwindcss from '@tailwindcss/vite';
  * file:// dentro do WebView do Android.
  */
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: '../../node_modules/onnxruntime-web/dist/*.wasm',
+          dest: 'onnx',
+          rename: { stripBase: true },
+        },
+      ],
+    }),
+  ],
   base: './',
   resolve: {
     alias: {
