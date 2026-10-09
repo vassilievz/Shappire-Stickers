@@ -8,11 +8,10 @@ const log = createLogger('image-enhancement');
 
 // Configuração do caminho dos arquivos WebAssembly do ONNX Runtime
 try {
-  ort.env.wasm.wasmPaths = {
-    wasm: './onnx/ort-wasm-simd-threaded.wasm',
-  };
-  // Limita threads para evitar esgotar memória e bateria em dispositivos móveis
-  ort.env.wasm.numThreads = 2;
+  // Define o diretório base onde os arquivos .wasm e .mjs foram empacotados
+  ort.env.wasm.wasmPaths = './onnx/';
+  // Modo single-thread seguro para WebView mobile Android
+  ort.env.wasm.numThreads = 1;
   ort.env.wasm.proxy = false;
 } catch (e) {
   log.warn('Falha ao configurar opções ort.env.wasm', e);

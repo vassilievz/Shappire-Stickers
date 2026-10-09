@@ -77,12 +77,19 @@ export function ImageEnhancerModal({
   }, []);
 
   useEffect(() => {
-    if (open) {
-      void loadStatuses();
-      setErrorMessage(null);
-      setEnhancementResult(null);
-      setProcessing(false);
-    }
+    if (!open) return;
+
+    void loadStatuses();
+    setErrorMessage(null);
+    setEnhancementResult(null);
+    setProcessing(false);
+
+    // Bloqueia a rolagem do fundo (background scroll lock)
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open, loadStatuses]);
 
   const selectedStatus = modelsStatus.find((s) => s.model.id === selectedModelId);
@@ -168,20 +175,20 @@ export function ImageEnhancerModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="ai-enhancer-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-hidden"
     >
-      <div className="relative flex max-h-[95vh] w-full max-w-2xl flex-col rounded-2xl border border-line bg-surface-1 shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
-              <Sparkles className="size-5" />
+      <div className="relative flex h-[96dvh] max-h-[96dvh] w-full max-w-2xl flex-col rounded-2xl border border-line bg-surface shadow-2xl overflow-hidden">
+        {/* Header Fixo */}
+        <div className="shrink-0 flex items-center justify-between border-b border-line bg-surface/95 backdrop-blur px-4 py-3 sm:px-5 sm:py-3.5 z-10">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+              <Sparkles className="size-4" />
             </div>
-            <div>
-              <h2 id="ai-enhancer-title" className="text-base font-semibold text-ink">
+            <div className="min-w-0">
+              <h2 id="ai-enhancer-title" className="text-sm sm:text-base font-semibold text-ink truncate">
                 {t('aiEnhancer.modalTitle')}
               </h2>
-              <p className="text-xs text-ink-muted">{t('aiEnhancer.subtitle')}</p>
+              <p className="text-[11px] sm:text-xs text-ink-muted truncate">{t('aiEnhancer.subtitle')}</p>
             </div>
           </div>
           <IconButton
@@ -193,20 +200,20 @@ export function ImageEnhancerModal({
           </IconButton>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        {/* Content Body com Scroll Interno */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3.5 sm:p-5 space-y-4">
           {/* Aviso de privacidade e IA local */}
-          <div className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2 p-3 text-xs text-ink-muted">
+          <div className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2/80 p-2.5 sm:p-3 text-[11px] sm:text-xs text-ink-muted">
             <ShieldCheck className="size-4 shrink-0 text-accent mt-0.5" />
             <p className="leading-relaxed">{t('aiEnhancer.disclaimer')}</p>
           </div>
 
           {/* Seleção do Modelo */}
-          <div className="space-y-3">
-            <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="space-y-2.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               {t('aiEnhancer.availableModels')}
             </label>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {AI_MODELS_CATALOG.map((model) => {
                 const status = modelsStatus.find((s) => s.model.id === model.id);
                 const isInstalled = status?.installed ?? false;
@@ -466,8 +473,8 @@ export function ImageEnhancerModal({
           )}
         </div>
 
-        {/* Footer com Ações */}
-        <div className="flex items-center justify-between border-t border-line bg-surface-2/60 px-5 py-3.5">
+        {/* Footer Fixo Sempre Visível */}
+        <div className="shrink-0 flex items-center justify-between border-t border-line bg-surface/95 backdrop-blur px-4 py-3 sm:px-5 sm:py-3.5 safe-bottom z-10">
           <div>
             {enhancementResult ? (
               <Button
@@ -489,6 +496,7 @@ export function ImageEnhancerModal({
             {!enhancementResult ? (
               <Button
                 variant="primary"
+                size="sm"
                 disabled={!isSelectedInstalled || processing || !sourceImageSrc}
                 onClick={() => void handleProcess()}
                 icon={<Sparkles className="size-4" />}
@@ -502,6 +510,7 @@ export function ImageEnhancerModal({
             ) : (
               <Button
                 variant="primary"
+                size="sm"
                 onClick={handleApply}
                 icon={<Check className="size-4" />}
               >
