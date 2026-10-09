@@ -8,8 +8,12 @@ const log = createLogger('image-enhancement');
 
 // Configuração do caminho dos arquivos WebAssembly do ONNX Runtime
 try {
-  // Define o diretório base onde os arquivos .wasm e .mjs foram empacotados
-  ort.env.wasm.wasmPaths = './onnx/';
+  // Configura os caminhos exatos dos arquivos .wasm e .mjs necessários para o runtime
+  // No Android WebView com Capacitor (https://localhost/), './onnx/' ou 'onnx/' resolvem na raiz da aplicação.
+  ort.env.wasm.wasmPaths = {
+    wasm: 'onnx/ort-wasm-simd-threaded.jsep.wasm',
+    mjs: 'onnx/ort-wasm-simd-threaded.jsep.mjs',
+  };
   // Modo single-thread seguro para WebView mobile Android
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.proxy = false;

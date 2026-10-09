@@ -26,6 +26,16 @@ export default defineConfig({
           dest: 'onnx',
           rename: { stripBase: true },
         },
+        {
+          src: '../../node_modules/onnxruntime-web/dist/*.wasm',
+          dest: 'assets/onnx',
+          rename: { stripBase: true },
+        },
+        {
+          src: '../../node_modules/onnxruntime-web/dist/*.mjs',
+          dest: 'assets/onnx',
+          rename: { stripBase: true },
+        },
       ],
     }),
   ],
