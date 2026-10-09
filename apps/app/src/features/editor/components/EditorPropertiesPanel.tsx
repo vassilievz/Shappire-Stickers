@@ -42,12 +42,10 @@ export function EditorPropertiesPanel({
   onAddText,
   onImportImage,
   onOpenCropper,
-  onOpenEnhancer,
 }: {
   onAddText: () => void;
   onImportImage: () => void;
   onOpenCropper?: (element: ImageElement) => void;
-  onOpenEnhancer?: (element: ImageElement) => void;
 }) {
   const { t } = useTranslation();
   const elements = useEditorStore((state) => state.history.present);
@@ -101,24 +99,14 @@ export function EditorPropertiesPanel({
         <>
           <section className="flex flex-col gap-2">
             <SectionTitle>{t('editor.properties.cropAndFrameSection')}</SectionTitle>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => onOpenCropper?.(element)}
-                icon={<ScanLine className="size-4" aria-hidden />}
-              >
-                {t('editor.properties.cropAndFrameButton')}
-              </Button>
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => onOpenEnhancer?.(element)}
-                icon={<Sparkles className="size-4 text-accent" aria-hidden />}
-              >
-                {t('editor.properties.enhanceButton')}
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => onOpenCropper?.(element)}
+              icon={<ScanLine className="size-4" aria-hidden />}
+            >
+              {t('editor.properties.cropAndFrameButton')}
+            </Button>
           </section>
 
           <StrokeSection

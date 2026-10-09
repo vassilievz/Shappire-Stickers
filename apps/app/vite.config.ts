@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 /**
  * Configuração do Vite para o frontend (React + TypeScript + Tailwind).
@@ -14,30 +13,6 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    viteStaticCopy({
-      targets: [
-        {
-          src: '../../node_modules/onnxruntime-web/dist/*.wasm',
-          dest: 'onnx',
-          rename: { stripBase: true },
-        },
-        {
-          src: '../../node_modules/onnxruntime-web/dist/*.mjs',
-          dest: 'onnx',
-          rename: { stripBase: true },
-        },
-        {
-          src: '../../node_modules/onnxruntime-web/dist/*.wasm',
-          dest: 'assets/onnx',
-          rename: { stripBase: true },
-        },
-        {
-          src: '../../node_modules/onnxruntime-web/dist/*.mjs',
-          dest: 'assets/onnx',
-          rename: { stripBase: true },
-        },
-      ],
-    }),
   ],
   base: './',
   resolve: {

@@ -9,7 +9,6 @@ import { PacksPage } from '@/features/packs/PacksPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
-import { AiModelsPage } from '@/features/ai/AiModelsPage';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
@@ -49,7 +48,6 @@ export function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/pacotes" element={<PacksPage />} />
           <Route path="/pacotes/:packId" element={<PackDetailPage />} />
-          <Route path="/ia" element={<AiModelsPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracoes" element={<SettingsPage />} />
