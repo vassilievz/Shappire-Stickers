@@ -68,7 +68,7 @@ export function InitialSupporterBadge({
         aria-label={label}
         className={cx(
           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide',
-          'border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 dark:border-indigo-400/30 dark:bg-indigo-500/15 dark:text-indigo-300',
+          'border border-line bg-surface-2 text-ink-soft',
           className,
         )}
       >

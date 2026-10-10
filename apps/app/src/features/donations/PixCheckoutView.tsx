@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Check, Copy, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { Check, Copy, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button, Card } from '@/shared/components/primitives';
 import { writeClipboardText } from '@/services/native/clipboard';
 import { showToast } from '@/state/toastStore';
@@ -58,6 +58,8 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
       }
     };
 
+    void checkStatus();
+
     timerRef.current = setInterval(() => {
       void checkStatus();
     }, POLLING_INTERVAL_MS);
@@ -70,9 +72,8 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
   if (isPaid) {
     return (
       <Card className="flex flex-col items-center p-6 text-center">
-        <div className="relative mb-4 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 p-4 border border-indigo-500/30">
-          <InitialSupporterIcon size="xl" className="animate-pulse" />
-          <Sparkles className="absolute -top-1 -right-1 size-6 text-amber-400" />
+        <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-line bg-surface-2">
+          <InitialSupporterIcon size="xl" />
         </div>
 
         <h2 className="text-[22px] font-bold tracking-tight text-ink">
@@ -97,7 +98,7 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink transition-colors"
+          className="flex min-h-[44px] min-w-[44px] items-center gap-1.5 rounded-[var(--radius-control)] px-1 text-[13px] font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink touch-manipulation"
         >
           <ArrowLeft className="size-4" />
           <span>{t('common.back')}</span>
@@ -113,7 +114,7 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
         </p>
 
         {/* QR Code renderizado no client via SVG seguro */}
-        <div className="rounded-[18px] bg-white p-4 shadow-sm border border-black/5">
+        <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
           <QRCodeSVG
             value={donation.copyPaste}
             size={220}
@@ -124,7 +125,7 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
         </div>
 
         <div className="mt-5 flex items-center gap-2 text-[13px] font-medium text-ink-muted">
-          <Loader2 className="size-4 animate-spin text-indigo-500" />
+          <Loader2 className="size-4 animate-spin text-accent" aria-hidden />
           <span>
             {isChecking ? t('donations.checkingPayment') : t('donations.waitingPayment')}
           </span>
@@ -138,7 +139,7 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
             onClick={handleCopy}
             icon={
               copied ? (
-                <Check className="size-4 text-emerald-500" />
+                <Check className="size-4 text-success" aria-hidden />
               ) : (
                 <Copy className="size-4" />
               )

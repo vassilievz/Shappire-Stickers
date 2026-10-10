@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Sparkles, ShieldCheck, Zap, UserRound } from 'lucide-react';
+import { Heart, ShieldCheck, Zap, UserRound } from 'lucide-react';
 import { Button, Card, EmptyState } from '@/shared/components/primitives';
 import { BlurFade } from '@/shared/components/motion';
 import { showToast } from '@/state/toastStore';
@@ -44,13 +44,18 @@ export function DonationsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col gap-6 pb-6">
+      <div className="flex flex-col gap-6 pb-12">
         <BlurFade delayMs={0} durationMs={320}>
-          <header className="flex flex-col gap-1">
-            <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+          <header className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent">
+                <Heart className="size-4" strokeWidth={2.2} aria-hidden />
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[26px]">
               {t('donations.title')}
             </h1>
-            <p className="text-[14px] leading-relaxed text-ink-muted">
+            <p className="text-sm leading-relaxed text-ink-muted">
               {t('donations.subtitle')}
             </p>
           </header>
@@ -58,7 +63,7 @@ export function DonationsPage() {
 
         <BlurFade delayMs={80} durationMs={320}>
           <EmptyState
-            icon={<UserRound className="size-6 text-indigo-400" aria-hidden />}
+            icon={<UserRound className="size-6 text-ink-muted" aria-hidden />}
             title={t('donations.signInRequiredTitle')}
             description={t('donations.signInRequiredDesc')}
             action={
@@ -78,16 +83,18 @@ export function DonationsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-6">
+    <div className="flex flex-col gap-6 pb-12">
       <BlurFade delayMs={0} durationMs={320}>
-        <header className="flex flex-col gap-1">
+        <header className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <Heart className="size-6 fill-rose-500 text-rose-500" />
-            <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-ink">
-              {t('donations.title')}
-            </h1>
+            <span className="flex size-7 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent">
+              <Heart className="size-4" strokeWidth={2.2} aria-hidden />
+            </span>
           </div>
-          <p className="text-[14px] leading-relaxed text-ink-muted">
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[26px]">
+            {t('donations.title')}
+          </h1>
+          <p className="text-sm leading-relaxed text-ink-muted">
             {t('donations.subtitle')}
           </p>
         </header>
@@ -106,20 +113,16 @@ export function DonationsPage() {
         </BlurFade>
       ) : (
         <>
-          {/* Card de apresentação da insígnia de Apoiador */}
           <BlurFade delayMs={60} durationMs={320}>
-            <Card className="relative overflow-hidden border-indigo-500/20 bg-gradient-to-br from-surface via-surface-2 to-indigo-500/5 p-5">
-              <div className="flex items-start gap-3.5">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+            <Card className="flex flex-col gap-5 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-line bg-accent/10">
                   <InitialSupporterIcon size="lg" />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-[16px] font-bold text-ink">
-                      {t('donations.badgeRewardTitle')}
-                    </h2>
-                    <Sparkles className="size-4 text-amber-400" />
-                  </div>
+                <div className="flex min-w-0 flex-col gap-1">
+                  <h2 className="text-base font-semibold text-ink">
+                    {t('donations.badgeRewardTitle')}
+                  </h2>
                   <p className="text-[13px] leading-relaxed text-ink-muted">
                     {t('donations.badgeRewardDesc')}
                   </p>
@@ -130,43 +133,39 @@ export function DonationsPage() {
                   )}
                 </div>
               </div>
+
+              <div className="border-t border-line pt-5">
+                <h3 className="mb-4 text-[15px] font-semibold text-ink">
+                  {t('donations.selectAmountTitle')}
+                </h3>
+                <DonationAmountSelector
+                  onSelectAmount={handleStartDonation}
+                  isLoading={isLoading}
+                />
+              </div>
             </Card>
           </BlurFade>
 
-          {/* Seletor de Valores */}
           <BlurFade delayMs={120} durationMs={320}>
-            <Card className="p-5">
-              <h3 className="text-[15px] font-semibold text-ink mb-4">
-                {t('donations.selectAmountTitle')}
-              </h3>
-              <DonationAmountSelector
-                onSelectAmount={handleStartDonation}
-                isLoading={isLoading}
-              />
-            </Card>
-          </BlurFade>
-
-          {/* Por que apoiar */}
-          <BlurFade delayMs={160} durationMs={320}>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex items-start gap-3 rounded-[16px] border border-line bg-surface p-4">
-                <ShieldCheck className="size-5 shrink-0 text-indigo-400 mt-0.5" />
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <div className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-3.5">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-semibold text-ink">
+                  <span className="text-xs font-semibold text-ink">
                     {t('donations.benefitIndependentTitle')}
                   </span>
-                  <span className="text-[12px] leading-relaxed text-ink-muted">
+                  <span className="text-xs leading-relaxed text-ink-muted">
                     {t('donations.benefitIndependentDesc')}
                   </span>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-[16px] border border-line bg-surface p-4">
-                <Zap className="size-5 shrink-0 text-amber-400 mt-0.5" />
+              <div className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-3.5">
+                <Zap className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-semibold text-ink">
+                  <span className="text-xs font-semibold text-ink">
                     {t('donations.benefitDevelopmentTitle')}
                   </span>
-                  <span className="text-[12px] leading-relaxed text-ink-muted">
+                  <span className="text-xs leading-relaxed text-ink-muted">
                     {t('donations.benefitDevelopmentDesc')}
                   </span>
                 </div>

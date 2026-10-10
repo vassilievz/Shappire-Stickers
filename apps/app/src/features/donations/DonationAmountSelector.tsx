@@ -3,7 +3,6 @@ import { DONATION_AMOUNTS, DONATION_MIN_AMOUNT, DONATION_MAX_AMOUNT } from '@sha
 import { Button } from '@/shared/components/primitives';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
-import { Heart } from 'lucide-react';
 
 interface DonationAmountSelectorProps {
   onSelectAmount: (amount: number) => void;
@@ -70,12 +69,13 @@ export function DonationAmountSelector({
               key={val}
               type="button"
               disabled={isLoading}
+              aria-pressed={isSelected}
               onClick={() => handlePresetSelect(val)}
               className={cx(
-                'relative flex flex-col items-center justify-center rounded-[16px] border p-3.5 transition-all select-none',
+                'relative flex min-h-[44px] flex-col items-center justify-center rounded-[var(--radius-control)] border p-3 transition-all select-none touch-manipulation',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400 font-bold shadow-sm shadow-indigo-500/20'
-                  : 'border-line bg-surface hover:bg-surface-2 text-ink',
+                  ? 'border-focus bg-surface-2 font-bold text-ink ring-1 ring-focus/40'
+                  : 'border-line bg-surface-2 text-ink hover:border-focus/30 hover:bg-surface-3 active:scale-[0.98]',
               )}
             >
               <span className="text-[12px] font-medium text-ink-muted">R$</span>
@@ -100,14 +100,14 @@ export function DonationAmountSelector({
             onChange={(e) => handleCustomChange(e.target.value)}
             disabled={isLoading}
             className={cx(
-              'h-12 w-full rounded-[14px] border bg-surface pl-10 pr-4 text-[16px] font-medium text-ink transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/40',
-              isCustom && !error ? 'border-indigo-500' : 'border-line',
-              error ? 'border-rose-500 text-rose-500' : '',
+              'h-11 w-full rounded-[var(--radius-control)] border bg-surface-2 pl-10 pr-4 text-[16px] font-medium text-ink transition-colors',
+              'focus:border-focus/60 focus:bg-surface-3 focus:outline-none',
+              isCustom && !error ? 'border-focus/60' : 'border-line',
+              error ? 'border-danger/60' : '',
             )}
           />
         </div>
-        {error && <span className="text-[12px] font-medium text-rose-400">{error}</span>}
+        {error && <span className="text-[12px] font-medium text-danger">{error}</span>}
       </div>
 
       <Button
@@ -117,7 +117,6 @@ export function DonationAmountSelector({
         loading={isLoading}
         disabled={!isValid || isLoading}
         onClick={handleSubmit}
-        icon={<Heart className="size-4 fill-current text-rose-400" aria-hidden />}
       >
         {t('donations.continueToPix', { amount: currentAmount || 0 })}
       </Button>
