@@ -11,6 +11,7 @@ export function toProfileJson(doc) {
     bio: doc.bio ?? '',
     avatar: doc.avatar ? { ...doc.avatar.toObject() } : null,
     banner: doc.banner ? { ...doc.banner.toObject() } : null,
+    badges: Array.isArray(doc.badges) ? [...doc.badges] : [],
     createdAt: doc.createdAt?.toISOString() ?? null,
     updatedAt: doc.updatedAt?.toISOString() ?? null,
   };
@@ -73,3 +74,16 @@ export async function setImage(uid, slot, meta) {
   await doc.save();
   return { profile: toProfileJson(doc), previous };
 }
+
+/**
+ * Concede uma insígnia ao usuário de forma permanente e idempotente ($addToSet).
+ */
+export async function grantBadge(uid, badgeName) {
+  const doc = await User.findOneAndUpdate(
+    { firebaseUid: uid },
+    { $addToSet: { badges: badgeName } },
+    { new: true },
+  );
+  return doc ? toProfileJson(doc) : null;
+}
+

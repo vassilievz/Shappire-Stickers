@@ -15,6 +15,9 @@ const profile: UserProfile = {
   bio: 'Criador de figurinhas',
   avatar: { fileId: 'file-avatar-1', url: 'https://cdn.example.com/me.png', mimeType: 'image/png' },
   banner: null,
+  badges: [],
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-02T00:00:00.000Z',
 };
 
 beforeEach(() => {

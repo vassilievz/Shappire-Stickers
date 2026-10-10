@@ -9,6 +9,7 @@ import { PacksPage } from '@/features/packs/PacksPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
+import { DonationsPage } from '@/features/donations/DonationsPage';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
@@ -49,6 +50,7 @@ export function App() {
           <Route path="/pacotes" element={<PacksPage />} />
           <Route path="/pacotes/:packId" element={<PackDetailPage />} />
           <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/apoiar" element={<DonationsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>

@@ -7,6 +7,8 @@ import { useTranslation } from '@/i18n';
 import { useAuthStore } from '@/state/authStore';
 import { useProfileStats, useProfileStore } from '@/state/profileStore';
 import { EditProfileSheet } from './EditProfileSheet';
+import { InitialSupporterBadge } from './components/InitialSupporterBadge';
+import { INITIAL_SUPPORTER_BADGE } from '@shappire/contracts';
 import { formatDate } from '@/shared/utils/format';
 
 function AvatarMedia({ src, className }: { src: string | null; className?: string }) {
@@ -217,9 +219,19 @@ export function ProfilePage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <h2 className="truncate text-[19px] font-semibold tracking-[-0.01em] text-ink">
-                {profile.displayName}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="truncate text-[19px] font-semibold tracking-[-0.01em] text-ink">
+                  {profile.displayName}
+                </h2>
+                {profile.badges?.includes(INITIAL_SUPPORTER_BADGE) ? (
+                  <InitialSupporterBadge size="md" />
+                ) : null}
+              </div>
+              {profile.badges?.includes(INITIAL_SUPPORTER_BADGE) ? (
+                <div className="mt-0.5">
+                  <InitialSupporterBadge showLabel size="sm" />
+                </div>
+              ) : null}
               {profile.username ? (
                 <p className="text-[13px] font-medium text-ink-muted">@{profile.username}</p>
               ) : null}

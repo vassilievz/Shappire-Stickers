@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { House, Package, Settings, UserRound, Wrench } from 'lucide-react';
+import { House, Package, Settings, UserRound, Wrench, Heart } from 'lucide-react';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
 
@@ -10,6 +10,7 @@ export function AppShell() {
     { to: '/', label: t('nav.home'), icon: House, end: true },
     { to: '/pacotes', label: t('nav.packs'), icon: Package, end: false },
     { to: '/tools', label: t('nav.tools'), icon: Wrench, end: false },
+    { to: '/apoiar', label: t('nav.support'), icon: Heart, end: false },
     { to: '/perfil', label: t('nav.profile'), icon: UserRound, end: false },
     { to: '/configuracoes', label: t('nav.settings'), icon: Settings, end: false },
   ] as const;

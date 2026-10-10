@@ -22,11 +22,18 @@ export const PROFILE_IMAGE_MAX_BYTES: ProfileImageMaxBytes;
 
 export const PROFILE_IMAGE_MIME_TYPES: readonly string[];
 
+export const INITIAL_SUPPORTER_BADGE = 'initial_supporter';
+export const DONATION_AMOUNTS: readonly number[];
+export const DONATION_MIN_AMOUNT: number;
+export const DONATION_MAX_AMOUNT: number;
+
 export interface ApiRoutes {
   readonly health: '/health';
   readonly profile: '/api/profile';
   readonly avatar: '/api/profile/avatar';
   readonly banner: '/api/profile/banner';
+  readonly donations: '/api/donations';
+  readonly myDonations: '/api/donations/me';
 }
 export const API_ROUTES: ApiRoutes;
 
@@ -43,7 +50,10 @@ export type ApiErrorCode =
   | 'UNSUPPORTED_MEDIA_TYPE'
   | 'RATE_LIMIT_EXCEEDED'
   | 'UPLOAD_FAILED'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'DONATION_NOT_FOUND'
+  | 'PAYMENT_GATEWAY_ERROR'
+  | 'INVALID_AMOUNT';
 
 /** Corpo de erro padrão devolvido pela API. */
 export interface ApiErrorBody {
@@ -57,3 +67,21 @@ export interface HostedImageMeta {
   url: string;
   mimeType: string;
 }
+
+export type DonationStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
+
+export interface DonationCreateResponse {
+  donationId: string;
+  amount: number;
+  copyPaste: string;
+  expiresAt: string | null;
+  status: DonationStatus;
+}
+
+export interface DonationStatusResponse {
+  donationId: string;
+  status: DonationStatus;
+  paidAt: string | null;
+  badgeGranted: boolean;
+}
+

@@ -55,6 +55,9 @@ export function toUserProfile(uid: string, data: unknown): UserProfile | null {
     bio: typeof data.bio === 'string' ? data.bio : '',
     avatar: sanitizeProfileImage(data.avatar),
     banner: sanitizeProfileImage(data.banner),
+    badges: Array.isArray(data.badges)
+      ? data.badges.filter((b): b is string => typeof b === 'string')
+      : [],
     createdAt: optionalString(data.createdAt),
     updatedAt: optionalString(data.updatedAt),
   };

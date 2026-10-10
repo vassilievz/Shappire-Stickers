@@ -32,11 +32,18 @@ export const PROFILE_IMAGE_MIME_TYPES = Object.freeze([
   'image/gif',
 ]);
 
+export const INITIAL_SUPPORTER_BADGE = 'initial_supporter';
+export const DONATION_AMOUNTS = Object.freeze([5, 10, 20, 50, 100]);
+export const DONATION_MIN_AMOUNT = 1;
+export const DONATION_MAX_AMOUNT = 5000;
+
 export const API_ROUTES = Object.freeze({
   health: '/health',
   profile: '/api/profile',
   avatar: '/api/profile/avatar',
   banner: '/api/profile/banner',
+  donations: '/api/donations',
+  myDonations: '/api/donations/me',
 });
 
 /**
@@ -56,4 +63,8 @@ export const API_ERROR_CODES = Object.freeze([
   'RATE_LIMIT_EXCEEDED',
   'UPLOAD_FAILED',
   'INTERNAL_ERROR',
+  'DONATION_NOT_FOUND',
+  'PAYMENT_GATEWAY_ERROR',
+  'INVALID_AMOUNT',
 ]);
+

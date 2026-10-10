@@ -68,6 +68,7 @@ export const env = (() => {
     mongodbUri,
     databaseName,
     v0xApiKey: process.env.V0X_API,
+    goatApiKey: process.env.GOAT_API_KEY?.trim() ?? '',
     dnsServers,
     firebase: {
       projectId: process.env.FIREBASE_PROJECT_ID,

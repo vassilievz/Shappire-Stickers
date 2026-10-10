@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, default: '', trim: true, maxlength: MAX_BIO_LENGTH },
     avatar: { type: profileImageSchema, default: null },
     banner: { type: profileImageSchema, default: null },
+    badges: { type: [String], default: [] },
   },
   { timestamps: true },
 );

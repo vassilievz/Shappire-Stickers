@@ -21,6 +21,7 @@ export interface UserProfile {
   bio: string;
   avatar: ProfileImage | null;
   banner: ProfileImage | null;
+  badges?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -34,6 +35,7 @@ export type AnalyticsEventName =
   | 'image_imported'
   | 'zip_imported'
   | 'whatsapp_export'
+  | 'donation_completed'
   | 'login_started'
   | 'login_completed'
   | 'logout';

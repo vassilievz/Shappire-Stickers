@@ -8,13 +8,15 @@ vi.mock('../models/User.js', () => {
     }
   }
   User.findOne = vi.fn();
+  User.findOneAndUpdate = vi.fn();
   return { User };
 });
 
 import { User } from '../models/User.js';
-import { getProfile, toProfileJson, upsertProfile, setImage } from './userService.js';
+import { getProfile, toProfileJson, upsertProfile, setImage, grantBadge } from './userService.js';
 
 const findOne = User.findOne;
+const findOneAndUpdate = User.findOneAndUpdate;
 
 function imageMeta(fileId) {
   return {
@@ -62,9 +64,15 @@ describe('toProfileJson', () => {
       bio: '',
       avatar: { fileId: 'avatar-1', url: 'https://cdn.v0x.lol/avatar-1.png', mimeType: 'image/png' },
       banner: null,
+      badges: [],
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });
+  });
+
+  it('preserva badges do documento Mongo', () => {
+    const doc = existingDoc({ badges: ['initial_supporter'] });
+    expect(toProfileJson(doc).badges).toEqual(['initial_supporter']);
   });
 });
 
@@ -181,3 +189,25 @@ describe('setImage', () => {
     expect(doc.save).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('grantBadge', () => {
+  it('adiciona badge com $addToSet no banco e retorna perfil atualizado', async () => {
+    const doc = existingDoc({ badges: ['initial_supporter'] });
+    findOneAndUpdate.mockResolvedValue(doc);
+
+    const profile = await grantBadge('uid-1', 'initial_supporter');
+
+    expect(findOneAndUpdate).toHaveBeenCalledWith(
+      { firebaseUid: 'uid-1' },
+      { $addToSet: { badges: 'initial_supporter' } },
+      { new: true },
+    );
+    expect(profile.badges).toContain('initial_supporter');
+  });
+
+  it('retorna null se usuário não existir', async () => {
+    findOneAndUpdate.mockResolvedValue(null);
+    expect(await grantBadge('inexistente', 'initial_supporter')).toBeNull();
+  });
+});
+

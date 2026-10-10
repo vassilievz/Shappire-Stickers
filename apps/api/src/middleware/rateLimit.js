@@ -23,3 +23,6 @@ function buildLimiter({ windowMs, limit }) {
 export const profileReadLimiter = buildLimiter({ windowMs: 60_000, limit: 60 });
 export const profileWriteLimiter = buildLimiter({ windowMs: 60_000, limit: 20 });
 export const imageUploadLimiter = buildLimiter({ windowMs: 60_000, limit: 10 });
+export const donationCreateLimiter = buildLimiter({ windowMs: 60_000, limit: 10 });
+export const donationStatusLimiter = buildLimiter({ windowMs: 60_000, limit: 60 });
+

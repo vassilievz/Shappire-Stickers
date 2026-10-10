@@ -50,3 +50,28 @@ export async function readClipboardText(): Promise<ClipboardReadResult> {
 
   return { text: '', success: false, error: 'unsupported' };
 }
+
+/**
+ * Escreve texto na área de transferência do sistema.
+ * Prioriza Capacitor nativo no Android/iOS, com fallback para navigator.clipboard na web.
+ */
+export async function writeClipboardText(text: string): Promise<boolean> {
+  try {
+    await Clipboard.write({ string: text });
+    return true;
+  } catch (err) {
+    log.warn('Capacitor Clipboard.write failed', err);
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      log.warn('navigator.clipboard.writeText failed', err);
+    }
+  }
+
+  return false;
+}
+
