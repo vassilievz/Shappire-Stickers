@@ -5,27 +5,27 @@ import { Button } from './primitives';
 import { useToastStore, type ToastKind } from '@/state/toastStore';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
+import { lockBodyScroll, unlockBodyScroll } from '@/shared/utils/bodyScrollLock';
 
 function useOverlayBehavior(open: boolean, onClose?: () => void): void {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return undefined;
 
+    lockBodyScroll();
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose?.();
+      if (event.key === 'Escape') onCloseRef.current?.();
     };
     document.addEventListener('keydown', onKeyDown);
 
-    const previousOverflow = document.body.style.overflow;
-    const previousTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      document.body.style.touchAction = previousTouchAction;
+      unlockBodyScroll();
     };
-  }, [open, onClose]);
+  }, [open]);
 }
 
 export interface ModalProps {

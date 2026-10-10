@@ -23,6 +23,7 @@ import { notifyAppReadyIfNative } from '@/services/ota/otaService';
 import { logAnalyticsEvent } from '@/services/firebase';
 import { ShareAppPromoHost } from '@/features/promo/ShareAppPromoHost';
 import { useAppUpdateStore } from '@/state/appUpdateStore';
+import { ensureBodyScrollUnlocked } from '@/shared/utils/bodyScrollLock';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
@@ -51,6 +52,16 @@ export function App() {
       void useAppUpdateStore.getState().bootstrap();
     }
   }, [isReady]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        ensureBodyScrollUnlocked();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   return (
     <HashRouter>

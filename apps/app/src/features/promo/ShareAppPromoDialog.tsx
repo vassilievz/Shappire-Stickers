@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Share2 } from 'lucide-react';
 import { APP_INFO } from '@/config/app';
 import { useTranslation } from '@/i18n';
@@ -23,12 +23,12 @@ export function ShareAppPromoDialog({ open, onClose }: ShareAppPromoDialogProps)
     if (open) setDontShowAgain(false);
   }, [open]);
 
-  const finalizeClose = () => {
+  const finalizeClose = useCallback(() => {
     if (dontShowAgain) {
       dismissSharePromoPermanent();
     }
     onClose();
-  };
+  }, [dontShowAgain, onClose]);
 
   const handleShare = async () => {
     const text = t('sharePromo.shareMessage', { url: downloadUrl });
