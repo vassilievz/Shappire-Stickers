@@ -8,6 +8,16 @@ import {
 } from '@/services/api/socialApi';
 import { PUBLICATION_VISIBILITY } from '@shappire/contracts';
 
+const UPLOAD_CONCURRENCY = 3;
+
+export type PublishProgressPhase = 'draft' | 'upload' | 'publish' | 'done';
+
+export interface PublishProgress {
+  phase: PublishProgressPhase;
+  completed?: number;
+  total?: number;
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const comma = dataUrl.indexOf(',');
   const header = comma >= 0 ? dataUrl.slice(0, comma) : '';
@@ -19,15 +29,49 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
+async function runWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const item = items[index];
+      if (item === undefined) continue;
+      results[index] = await worker(item, index);
+    }
+  }
+
+  const pool = Math.min(Math.max(concurrency, 1), items.length);
+  await Promise.all(Array.from({ length: pool }, () => runWorker()));
+  return results;
+}
+
+function logPublishTiming(phase: string, startedAt: number) {
+  if (!import.meta.env.DEV) return;
+  const ms = Math.round(performance.now() - startedAt);
+  console.warn('[publication]', { phase, ms });
+}
+
 export interface PublishPackInput {
   pack: StickerPack;
   description: string;
   isAdultContent: boolean;
   makePublic: boolean;
   publicationId?: string | null;
+  onProgress?: (progress: PublishProgress) => void;
 }
 
 export async function syncPackToPublication(input: PublishPackInput) {
+  const flowStart = performance.now();
+  input.onProgress?.({ phase: 'draft' });
+
+  const draftStart = performance.now();
   const draft = await upsertPublicationDraft({
     localPackId: input.pack.id,
     title: input.pack.name,
@@ -36,8 +80,15 @@ export async function syncPackToPublication(input: PublishPackInput) {
     visibility: input.makePublic ? PUBLICATION_VISIBILITY.public : PUBLICATION_VISIBILITY.private,
     publicationId: input.publicationId ?? undefined,
   });
+  logPublishTiming('draft', draftStart);
 
-  for (const sticker of input.pack.stickers) {
+  const stickers = input.pack.stickers;
+  const total = stickers.length;
+  let completed = 0;
+  input.onProgress?.({ phase: 'upload', completed: 0, total });
+
+  const uploadStart = performance.now();
+  await runWithConcurrency(stickers, UPLOAD_CONCURRENCY, async (sticker) => {
     const dataUrl = await readStickerDataUrl(input.pack.id, sticker.fileName);
     const blob = dataUrlToBlob(dataUrl);
     await uploadPublicationSticker(draft.id, sticker.id, blob, {
@@ -49,11 +100,23 @@ export async function syncPackToPublication(input: PublishPackInput) {
       isAnimated: Boolean(sticker.isAnimated),
       durationMs: sticker.durationMs ?? 0,
     });
-  }
+    completed += 1;
+    input.onProgress?.({ phase: 'upload', completed, total });
+  });
+  logPublishTiming('upload', uploadStart);
 
   if (input.makePublic) {
-    return publishPublication(draft.id);
+    input.onProgress?.({ phase: 'publish' });
+    const publishStart = performance.now();
+    const published = await publishPublication(draft.id);
+    logPublishTiming('publish', publishStart);
+    logPublishTiming('total', flowStart);
+    input.onProgress?.({ phase: 'done' });
+    return published;
   }
+
+  logPublishTiming('total', flowStart);
+  input.onProgress?.({ phase: 'done' });
   return draft;
 }
 

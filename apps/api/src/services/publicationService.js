@@ -49,7 +49,7 @@ export function toPublicationSummary(doc, extras = {}) {
     title: doc.title,
     description: doc.description ?? '',
     cover: doc.cover ? { ...doc.cover } : null,
-    stickerCount: doc.stickers?.length ?? 0,
+    stickerCount: doc.stickerCount ?? doc.stickers?.length ?? 0,
     visibility: doc.visibility,
     isAdultContent: Boolean(doc.isAdultContent),
     publishedAt: doc.publishedAt ? doc.publishedAt.toISOString() : null,
@@ -215,9 +215,13 @@ export async function uploadStickerAsset(uid, publicationId, stickerId, file, me
   else doc.stickers.push(sticker);
 
   if (!doc.cover) doc.cover = toCover(sticker);
+  doc.stickerCount = doc.stickers.length;
   await doc.save();
   return toPublicationDetail(doc);
 }
+
+const PUBLICATION_LIST_SELECT =
+  'ownerUid localPackId title description cover visibility isAdultContent publishedAt likeCount commentCount collectionCount status updatedAt stickerCount';
 
 export async function uploadCover(uid, publicationId, file) {
   const doc = await assertOwner(publicationId, uid);
@@ -299,6 +303,7 @@ export async function listOwnerPublications(ownerUid, viewerUid, { cursor, limit
 
   const pageSize = Math.min(Math.max(Number(limit) || 20, 1), 50);
   const docs = await Publication.find(query)
+    .select(PUBLICATION_LIST_SELECT)
     .sort(isOwner ? { updatedAt: -1, _id: -1 } : { publishedAt: -1, _id: -1 })
     .limit(pageSize + 1)
     .lean();
@@ -332,6 +337,7 @@ export async function getFeed(viewerUid, { cursor, limit = 20 } = {}) {
 
   const pageSize = Math.min(Math.max(Number(limit) || 20, 1), 50);
   const docs = await Publication.find(query)
+    .select(PUBLICATION_LIST_SELECT)
     .sort({ publishedAt: -1, _id: -1 })
     .limit(pageSize + 1)
     .lean();
@@ -363,6 +369,7 @@ export async function getExplore(viewerUid, { cursor, limit = 20, sort = 'recent
   }
 
   const docs = await Publication.find(query)
+    .select(PUBLICATION_LIST_SELECT)
     .sort(sortSpec)
     .limit(pageSize + 1)
     .lean();
@@ -432,6 +439,7 @@ export async function searchPublications(viewerUid, { q, cursor, limit = 20 } = 
   let query = applyPublishedCursor(filter, cursor);
   const pageSize = Math.min(Math.max(Number(limit) || 20, 1), 50);
   const docs = await Publication.find(query, { score: { $meta: 'textScore' } })
+    .select(PUBLICATION_LIST_SELECT)
     .sort({ score: { $meta: 'textScore' }, publishedAt: -1, _id: -1 })
     .limit(pageSize + 1)
     .lean();

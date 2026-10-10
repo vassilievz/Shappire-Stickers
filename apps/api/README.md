@@ -56,6 +56,17 @@ npm start -w apps/api     # produção
 
 A inicialização falha rápido (fail-fast) se alguma variável obrigatória estiver ausente ou se a `MONGODB_URI` não tiver nome de banco explícito.
 
+## Deploy (Railway)
+
+A API de produção é hospedada na [Railway](https://railway.app). Não há arquivos nem scripts de Discloud neste repositório.
+
+1. Crie um serviço apontando para o diretório `apps/api` (ou a raiz do monorepo com **Root Directory** `apps/api`).
+2. Comando de start: `npm start` (usa `node src/server.js`).
+3. Defina `PORT` a partir da variável que a Railway injeta (`PORT` já é lida em `src/config/env.js`).
+4. Configure todas as variáveis de `apps/api/.env.example` no painel da Railway (nunca no Git).
+5. Ative `TRUST_PROXY=true` atrás do proxy da Railway.
+6. No app Android/web, defina `VITE_API_URL` com a URL pública do serviço (ex.: `https://shappireapi-production.up.railway.app`), conforme `apps/app/.env.example`.
+
 ## Testes
 
 ```bash

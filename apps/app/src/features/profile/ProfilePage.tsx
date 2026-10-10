@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ImageOff, Pencil, UserRound } from 'lucide-react';
+import { ChevronRight, Heart, ImageOff, Pencil, Settings, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button, Card, EmptyState, Spinner } from '@/shared/components/primitives';
 import { BlurFade } from '@/shared/components/motion';
 import { cx } from '@/shared/utils/cx';
@@ -53,6 +54,48 @@ function BannerMedia({ src }: { src: string | null }) {
   }
   return (
     <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+  );
+}
+
+function ProfileShortcuts() {
+  const { t } = useTranslation();
+  const links = [
+    {
+      to: '/apoiar',
+      icon: Heart,
+      title: t('profile.quickSupport'),
+      description: t('profile.quickSupportDesc'),
+    },
+    {
+      to: '/configuracoes',
+      icon: Settings,
+      title: t('profile.quickSettings'),
+      description: t('profile.quickSettingsDesc'),
+    },
+  ] as const;
+
+  return (
+    <nav aria-label={t('common.actions')} className="flex flex-col gap-2">
+      {links.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="flex min-h-[52px] items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 transition-colors hover:bg-surface-2"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+              <Icon className="size-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold text-ink">{item.title}</span>
+              <span className="block text-[12px] leading-snug text-ink-muted">{item.description}</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-ink-muted" aria-hidden />
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -123,14 +166,17 @@ export function ProfilePage() {
           title={t('profile.signedOut.title')}
           description={t('profile.signedOut.description')}
           action={
-            <Button
-              variant="primary"
-              fullWidth
-              loading={isSigningIn}
-              onClick={() => void signInWithGoogle()}
-            >
-              {t('profile.signedOut.signIn')}
-            </Button>
+            <div className="flex w-full max-w-sm flex-col gap-4">
+              <Button
+                variant="primary"
+                fullWidth
+                loading={isSigningIn}
+                onClick={() => void signInWithGoogle()}
+              >
+                {t('profile.signedOut.signIn')}
+              </Button>
+              <ProfileShortcuts />
+            </div>
           }
         />
       </div>
@@ -251,6 +297,10 @@ export function ProfilePage() {
             ) : null}
           </div>
         </Card>
+      </BlurFade>
+
+      <BlurFade delayMs={200} durationMs={320}>
+        <ProfileShortcuts />
       </BlurFade>
 
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />

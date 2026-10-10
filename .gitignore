@@ -48,9 +48,6 @@ apps/api/.env
 apps/api/.env.*
 !apps/api/.env.example
 
-# Backend / API — código público; segredos ficam somente em apps/api/.env (ignorado acima)
-apps/api/api.zip
-
 # OtaKit
 .otakit*
 otakit.config.json

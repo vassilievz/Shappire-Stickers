@@ -4,15 +4,10 @@ export const it = {
   },
   nav: {
     home: 'Home',
-    editor: 'Editor',
     packs: 'Pacchetti',
-    ai: 'IA',
     tools: 'Tools',
-    support: 'Sostieni',
-    feed: 'Feed',
     community: 'Community',
     profile: 'Profilo',
-    settings: 'Impostazioni',
   },
   common: {
     back: 'Indietro',
@@ -406,6 +401,10 @@ export const it = {
       stickers: 'Sticker',
       memberSince: 'Membro dal {date}',
     },
+    quickSupport: 'Sostieni il progetto',
+    quickSupportDesc: 'Donazioni con GoatPay e badge sostenitore.',
+    quickSettings: 'Impostazioni',
+    quickSettingsDesc: 'Account, lingua, privacy e preferenze.',
     signedOut: {
       title: 'Non sei connesso',
       description: 'Accedi con il tuo account Google per creare e personalizzare il tuo profilo.',
@@ -840,6 +839,14 @@ export const it = {
     followingTitle: 'Seguiti',
     followListEmpty: 'Nessuno qui per ora.',
     adultUnavailable: 'I contenuti +18 non sono disponibili in questo ambiente. Contatta il supporto se serve aiuto.',
+    unknownCreator: 'Creatore',
+    stickerCountShort: '{count} sticker',
+    publishProgress: {
+      draft: 'Preparazione album…',
+      upload: 'Invio media ({current}/{total})…',
+      publish: 'Completamento pubblicazione…',
+      done: 'Fatto',
+    },
   },
   settingsContent: {
     group: 'Preferenze contenuti',

@@ -22,9 +22,9 @@ describe('i18n translations', () => {
     expect(t('nav.home', undefined, 'hi')).toBe('होम');
   });
 
-  it('translates feed and profile nav links correctly in each language', () => {
-    expect(t('nav.feed', undefined, 'en')).toBe('Feed');
-    expect(t('nav.feed', undefined, 'pt-BR')).toBe('Feed');
+  it('translates community and profile nav links correctly in each language', () => {
+    expect(t('nav.community', undefined, 'en')).toBe('Community');
+    expect(t('nav.community', undefined, 'pt-BR')).toBe('Comunidade');
     expect(t('nav.profile', undefined, 'en')).toBe('Profile');
     expect(t('nav.profile', undefined, 'pt-BR')).toBe('Perfil');
     expect(t('nav.profile', undefined, 'de')).toBe('Profil');

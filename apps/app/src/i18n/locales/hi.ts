@@ -4,15 +4,10 @@ export const hi = {
   },
   nav: {
     home: 'होम',
-    editor: 'एडिटर',
     packs: 'पैक्स',
-    ai: 'एआई',
     tools: 'Tools',
-    support: 'समर्थन करें',
-    feed: 'फ़ीड',
     community: 'समुदाय',
     profile: 'प्रोफ़ाइल',
-    settings: 'सेटिंग्स',
   },
   common: {
     back: 'वापस',
@@ -404,6 +399,10 @@ export const hi = {
       stickers: 'स्टिकर',
       memberSince: '{date} से सदस्य',
     },
+    quickSupport: 'प्रोजेक्ट का समर्थन करें',
+    quickSupportDesc: 'GoatPay दान और समर्थक बैज।',
+    quickSettings: 'सेटिंग्स',
+    quickSettingsDesc: 'खाता, भाषा, गोपनीयता और प्राथमिकताएँ।',
     signedOut: {
       title: 'आप साइन इन नहीं हैं',
       description: 'प्रोफ़ाइल बनाने और निजी बनाने के लिए अपने Google खाते से साइन इन करें।',
@@ -834,6 +833,14 @@ export const hi = {
     followingTitle: 'फ़ॉलो कर रहे हैं',
     followListEmpty: 'अभी यहाँ कोई नहीं।',
     adultUnavailable: '+18 सामग्री इस वातावरण में उपलब्ध नहीं है। मदद के लिए सहायता से संपर्क करें।',
+    unknownCreator: 'निर्माता',
+    stickerCountShort: '{count} स्टिकर',
+    publishProgress: {
+      draft: 'एल्बम तैयार हो रहा है…',
+      upload: 'मीडिया अपलोड ({current}/{total})…',
+      publish: 'प्रकाशन पूरा हो रहा है…',
+      done: 'पूर्ण',
+    },
   },
   settingsContent: {
     group: 'सामग्री प्राथमिकताएँ',

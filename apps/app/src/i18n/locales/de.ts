@@ -4,15 +4,10 @@ export const de = {
   },
   nav: {
     home: 'Start',
-    editor: 'Editor',
     packs: 'Pakete',
-    ai: 'KI',
     tools: 'Tools',
-    support: 'Unterstützen',
-    feed: 'Feed',
     community: 'Community',
     profile: 'Profil',
-    settings: 'Einstellungen',
   },
   common: {
     back: 'Zurück',
@@ -405,6 +400,10 @@ export const de = {
       stickers: 'Sticker',
       memberSince: 'Mitglied seit {date}',
     },
+    quickSupport: 'Projekt unterstützen',
+    quickSupportDesc: 'Spenden via GoatPay und Unterstützer-Abzeichen.',
+    quickSettings: 'Einstellungen',
+    quickSettingsDesc: 'Konto, Sprache, Datenschutz und Präferenzen.',
     signedOut: {
       title: 'Du bist nicht angemeldet',
       description:
@@ -838,6 +837,14 @@ export const de = {
     followingTitle: 'Gefolgt',
     followListEmpty: 'Noch niemand hier.',
     adultUnavailable: '+18-Inhalte sind in dieser Umgebung nicht verfügbar. Kontaktiere den Support bei Bedarf.',
+    unknownCreator: 'Ersteller',
+    stickerCountShort: '{count} Sticker',
+    publishProgress: {
+      draft: 'Album wird vorbereitet…',
+      upload: 'Medien werden hochgeladen ({current}/{total})…',
+      publish: 'Veröffentlichung wird abgeschlossen…',
+      done: 'Fertig',
+    },
   },
   settingsContent: {
     group: 'Inhaltspräferenzen',

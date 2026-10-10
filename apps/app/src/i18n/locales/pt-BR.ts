@@ -4,15 +4,10 @@ export const ptBR = {
   },
   nav: {
     home: 'Início',
-    editor: 'Editor',
     packs: 'Pacotes',
-    ai: 'IA',
     tools: 'Tools',
-    support: 'Apoiar',
-    feed: 'Feed',
     community: 'Comunidade',
     profile: 'Perfil',
-    settings: 'Ajustes',
   },
   common: {
     back: 'Voltar',
@@ -404,6 +399,10 @@ export const ptBR = {
       stickers: 'Figurinhas',
       memberSince: 'Membro desde {date}',
     },
+    quickSupport: 'Apoiar o projeto',
+    quickSupportDesc: 'Doações via GoatPay e insígnia de apoiador.',
+    quickSettings: 'Ajustes',
+    quickSettingsDesc: 'Conta, idioma, privacidade e preferências.',
     signedOut: {
       title: 'Você não está conectado',
       description: 'Entre com a sua conta Google para criar e personalizar o seu perfil.',
@@ -834,6 +833,14 @@ export const ptBR = {
     followingTitle: 'Seguindo',
     followListEmpty: 'Ninguém por aqui ainda.',
     adultUnavailable: 'Conteúdo +18 não está disponível neste ambiente. Entre em contato com o suporte se precisar de ajuda.',
+    unknownCreator: 'Criador',
+    stickerCountShort: '{count} figurinhas',
+    publishProgress: {
+      draft: 'Preparando álbum…',
+      upload: 'Enviando mídias ({current}/{total})…',
+      publish: 'Finalizando publicação…',
+      done: 'Concluído',
+    },
   },
   settingsContent: {
     group: 'Preferências de conteúdo',

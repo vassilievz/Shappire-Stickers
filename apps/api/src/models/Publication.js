@@ -49,6 +49,7 @@ const publicationSchema = new mongoose.Schema(
       default: [],
       validate: [(v) => v.length <= PUBLICATION_MAX_STICKERS, 'Limite de figurinhas excedido.'],
     },
+    stickerCount: { type: Number, default: 0, min: 0 },
     visibility: {
       type: String,
       enum: Object.values(PUBLICATION_VISIBILITY),

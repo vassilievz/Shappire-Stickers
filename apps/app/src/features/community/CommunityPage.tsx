@@ -15,6 +15,7 @@ import type { PublicationSummary, PublicAuthor } from '@shappire/contracts';
 import { friendlyMessage } from '@/shared/errors';
 import { showToast } from '@/state/toastStore';
 import { AlbumCard } from './components/AlbumCard';
+import { PublicationPostCard } from './components/PublicationPostCard';
 import { importPublicationToLibrary } from '@/services/community/importPublicationService';
 import { fetchPublication } from '@/services/api/socialApi';
 import { useLibraryStore } from '@/state/libraryStore';
@@ -25,6 +26,18 @@ type Tab = 'feed' | 'explore';
 
 const SEARCH_MIN = 2;
 
+type TabCache = {
+  items: PublicationSummary[];
+  cursor: string | null;
+};
+
+function mergePublications(prev: PublicationSummary[], next: PublicationSummary[]) {
+  if (!prev.length) return next;
+  const seen = new Set(prev.map((p) => p.id));
+  const unique = next.filter((p) => !seen.has(p.id));
+  return [...prev, ...unique];
+}
+
 export function CommunityPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -32,6 +45,11 @@ export function CommunityPage() {
   const tab = (params.get('tab') === 'explore' ? 'explore' : 'feed') as Tab;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const refreshLibrary = useLibraryStore((s) => s.refresh);
+
+  const tabCacheRef = useRef<Record<Tab, TabCache>>({
+    feed: { items: [], cursor: null },
+    explore: { items: [], cursor: null },
+  });
 
   const [items, setItems] = useState<PublicationSummary[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -52,22 +70,36 @@ export function CommunityPage() {
 
   const isSearchMode = tab === 'explore' && debouncedSearch.length >= SEARCH_MIN;
 
+  const persistTabCache = useCallback(
+    (nextItems: PublicationSummary[], nextCursor: string | null) => {
+      tabCacheRef.current[tab] = { items: nextItems, cursor: nextCursor };
+    },
+    [tab],
+  );
+
   const load = useCallback(
     async (reset: boolean) => {
       if (tab === 'feed' && !isAuthenticated) {
         setItems([]);
+        setCursor(null);
         setLoading(false);
+        tabCacheRef.current.feed = { items: [], cursor: null };
         return;
       }
       setError(null);
       if (reset) setLoading(true);
       else setLoadingMore(true);
+      const cursorForRequest = reset ? null : cursor;
       try {
         const page =
           tab === 'feed'
-            ? await fetchFeed(reset ? null : cursor)
-            : await fetchExplore(reset ? null : cursor, exploreSort);
-        setItems((prev) => (reset ? page.items : [...prev, ...page.items]));
+            ? await fetchFeed(cursorForRequest)
+            : await fetchExplore(cursorForRequest, exploreSort);
+        setItems((prev) => {
+          const merged = reset ? page.items : mergePublications(prev, page.items);
+          persistTabCache(merged, page.nextCursor);
+          return merged;
+        });
         setCursor(page.nextCursor);
       } catch (err) {
         setError(friendlyMessage(err));
@@ -76,7 +108,7 @@ export function CommunityPage() {
         setLoadingMore(false);
       }
     },
-    [tab, isAuthenticated, cursor, exploreSort],
+    [tab, isAuthenticated, cursor, exploreSort, persistTabCache],
   );
 
   const runSearch = useCallback(
@@ -91,7 +123,9 @@ export function CommunityPage() {
       try {
         const result = await searchSocial(debouncedSearch, reset ? null : searchCursor);
         if (requestId !== searchRequestId.current) return;
-        setSearchAlbums((prev) => (reset ? result.publications.items : [...prev, ...result.publications.items]));
+        setSearchAlbums((prev) =>
+          reset ? result.publications.items : mergePublications(prev, result.publications.items),
+        );
         setSearchProfiles((prev) => {
           const merged = reset ? result.profiles.items : [...prev, ...result.profiles.items];
           const seen = new Set<string>();
@@ -129,8 +163,30 @@ export function CommunityPage() {
   }, [debouncedSearch, isSearchMode]);
 
   useEffect(() => {
+    tabCacheRef.current.explore = { items: [], cursor: null };
+  }, [exploreSort]);
+
+  useEffect(() => {
     if (isSearchMode) return;
+
+    if (tab === 'feed' && !isAuthenticated) {
+      setItems([]);
+      setCursor(null);
+      setLoading(false);
+      return;
+    }
+
+    const cached = tabCacheRef.current[tab];
+    if (cached.items.length > 0) {
+      setItems(cached.items);
+      setCursor(cached.cursor);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     setCursor(null);
+    setItems([]);
     void load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, isAuthenticated, exploreSort, isSearchMode]);
@@ -144,12 +200,34 @@ export function CommunityPage() {
       showToast(t('community.signInRequired'), 'info');
       return;
     }
+    const optimistic = {
+      likedByMe: !album.likedByMe,
+      likeCount: Math.max(0, album.likeCount + (album.likedByMe ? -1 : 1)),
+    };
+    const patchItem = (item: PublicationSummary) =>
+      item.id === album.id ? { ...item, ...optimistic } : item;
+    setItems((prev) => {
+      const next = prev.map(patchItem);
+      persistTabCache(next, cursor);
+      return next;
+    });
+    setSearchAlbums((prev) => prev.map(patchItem));
     try {
       const res = album.likedByMe ? await unlikePublication(album.id) : await likePublication(album.id);
       const patch = { likedByMe: res.liked, likeCount: res.likeCount };
-      setItems((prev) => prev.map((item) => (item.id === album.id ? { ...item, ...patch } : item)));
+      setItems((prev) => {
+        const next = prev.map((item) => (item.id === album.id ? { ...item, ...patch } : item));
+        persistTabCache(next, cursor);
+        return next;
+      });
       setSearchAlbums((prev) => prev.map((item) => (item.id === album.id ? { ...item, ...patch } : item)));
     } catch (err) {
+      setItems((prev) => {
+        const next = prev.map((item) => (item.id === album.id ? album : item));
+        persistTabCache(next, cursor);
+        return next;
+      });
+      setSearchAlbums((prev) => prev.map((item) => (item.id === album.id ? album : item)));
       showToast(friendlyMessage(err), 'error');
     }
   };
@@ -171,17 +249,53 @@ export function CommunityPage() {
   };
 
   const onBlockedUser = (uid: string) => {
-    setItems((prev) => prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid));
+    setItems((prev) => {
+      const next = prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid);
+      persistTabCache(next, cursor);
+      return next;
+    });
     setSearchAlbums((prev) => prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid));
     setSearchProfiles((prev) => prev.filter((p) => p.uid !== uid));
   };
 
-  const renderAlbumGrid = (albums: PublicationSummary[]) => (
+  const renderFeedTimeline = (albums: PublicationSummary[]) => (
+    <div role="feed" aria-label={t('community.feed')} className="flex flex-col">
+      {albums.map((album, index) => (
+        <PublicationPostCard
+          key={album.id}
+          album={album}
+          layout="timeline"
+          priorityCover={index === 0}
+          onLike={() => void toggleLike(album)}
+          onCollect={() => void collect(album)}
+          onBlocked={onBlockedUser}
+        />
+      ))}
+    </div>
+  );
+
+  const renderExploreGrid = (albums: PublicationSummary[]) => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {albums.map((album) => (
+        <PublicationPostCard
+          key={album.id}
+          album={album}
+          layout="compact"
+          onLike={() => void toggleLike(album)}
+          onCollect={() => void collect(album)}
+          onBlocked={onBlockedUser}
+        />
+      ))}
+    </div>
+  );
+
+  const renderSearchGrid = (albums: PublicationSummary[]) => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {albums.map((album) => (
         <AlbumCard
           key={album.id}
           album={album}
+          compact
           onLike={() => void toggleLike(album)}
           onCollect={() => void collect(album)}
           onBlocked={onBlockedUser}
@@ -201,7 +315,7 @@ export function CommunityPage() {
         <button
           type="button"
           onClick={() => setTab('feed')}
-          className={`flex flex-1 min-h-[40px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
+          className={`flex flex-1 min-h-[44px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
             tab === 'feed' ? 'bg-surface-3 text-ink' : 'text-ink-muted'
           }`}
         >
@@ -211,7 +325,7 @@ export function CommunityPage() {
         <button
           type="button"
           onClick={() => setTab('explore')}
-          className={`flex flex-1 min-h-[40px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
+          className={`flex flex-1 min-h-[44px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
             tab === 'explore' ? 'bg-surface-3 text-ink' : 'text-ink-muted'
           }`}
         >
@@ -223,7 +337,10 @@ export function CommunityPage() {
       {tab === 'explore' ? (
         <div className="flex flex-col gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted"
+              aria-hidden
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -240,7 +357,7 @@ export function CommunityPage() {
                   key={sort}
                   type="button"
                   onClick={() => setExploreSort(sort)}
-                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] ${
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] min-h-[36px] ${
                     exploreSort === sort ? 'border-accent text-ink' : 'border-line text-ink-muted'
                   }`}
                 >
@@ -312,7 +429,7 @@ export function CommunityPage() {
                 <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">
                   {t('community.searchAlbums')}
                 </h2>
-                {renderAlbumGrid(searchAlbums)}
+                {renderSearchGrid(searchAlbums)}
               </section>
             ) : null}
             {searchCursor ? (
@@ -356,12 +473,20 @@ export function CommunityPage() {
             ) : undefined
           }
         />
+      ) : tab === 'feed' ? (
+        renderFeedTimeline(items)
       ) : (
-        renderAlbumGrid(items)
+        renderExploreGrid(items)
       )}
 
       {!isSearchMode && cursor && !loading ? (
-        <Button type="button" variant="secondary" className="w-full" disabled={loadingMore} onClick={() => void load(false)}>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          disabled={loadingMore}
+          onClick={() => void load(false)}
+        >
           {loadingMore ? t('common.loading') : t('community.loadMore')}
         </Button>
       ) : null}

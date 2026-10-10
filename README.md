@@ -216,7 +216,7 @@ Build the production frontend:
 npm run build
 ```
 
-> Optional profile features (Google Login and profile editing) require a reachable Shappire API instance, configured through `VITE_API_URL` in `apps/app/.env`. The API source is available in `apps/api` — it is optional and separate from the main functionality, and every other feature works without it.
+> Optional profile features (Google Login and profile editing) require a reachable Shappire API instance, configured through `VITE_API_URL` in `apps/app/.env` (production API is deployed on Railway; see `apps/api/README.md`). The API source is available in `apps/api` — it is optional and separate from the main functionality, and every other feature works without it.
 
 ### Quality Checks
 
