@@ -254,7 +254,8 @@ export function ProfilePage() {
                 src={avatarSrc}
                 size="xl"
                 decoration={profile.avatarDecoration}
-                className="rounded-full ring-4 ring-app"
+                decorationPriority
+                avatarClassName="ring-4 ring-app"
               />
             </div>
 
