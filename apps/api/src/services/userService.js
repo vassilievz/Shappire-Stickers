@@ -1,6 +1,9 @@
 import { MAX_DISPLAY_NAME_LENGTH } from '@shappire/contracts';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/apiError.js';
+import { computeMonthlyDonorStatus } from './monthlyDonorService.js';
+import { resolvePublicAvatarDecoration } from './avatarDecorationService.js';
+import { ensureUserIdentity } from './userIdentityService.js';
 
 function defaultDisplayNameFromEmail(email) {
   const local = typeof email === 'string' ? email.split('@')[0]?.trim() : '';
@@ -19,14 +22,22 @@ export function toProfileJson(doc) {
     avatar: doc.avatar ? { ...doc.avatar.toObject() } : null,
     banner: doc.banner ? { ...doc.banner.toObject() } : null,
     badges: Array.isArray(doc.badges) ? [...doc.badges] : [],
+    avatarDecorationId: doc.avatarDecorationId ?? null,
+    avatarDecoration: resolvePublicAvatarDecoration(doc),
+    monthlyDonor: computeMonthlyDonorStatus(doc.monthlyDonorExpiresAt ?? null),
+    inviteCode: doc.inviteCode ?? null,
+    publicId: doc.publicId ?? null,
+    referredByUid: doc.referredByUid ?? null,
     createdAt: doc.createdAt?.toISOString() ?? null,
     updatedAt: doc.updatedAt?.toISOString() ?? null,
   };
 }
 
 export async function getProfile(uid) {
-  const doc = await User.findOne({ firebaseUid: uid });
-  return doc ? toProfileJson(doc) : null;
+  let doc = await User.findOne({ firebaseUid: uid });
+  if (!doc) return null;
+  doc = await ensureUserIdentity(doc);
+  return toProfileJson(doc);
 }
 
 /**

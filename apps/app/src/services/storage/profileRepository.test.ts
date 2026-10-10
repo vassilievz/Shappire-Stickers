@@ -16,6 +16,10 @@ const profile: UserProfile = {
   avatar: { fileId: 'file-avatar-1', url: 'https://cdn.example.com/me.png', mimeType: 'image/png' },
   banner: null,
   badges: [],
+  avatarDecorationId: null,
+  avatarDecoration: null,
+  inviteCode: null,
+  publicId: null,
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-02T00:00:00.000Z',
 };

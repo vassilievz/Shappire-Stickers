@@ -9,6 +9,7 @@ vi.mock('../models/User.js', () => {
   }
   User.findOne = vi.fn();
   User.findOneAndUpdate = vi.fn();
+  User.exists = vi.fn();
   return { User };
 });
 
@@ -39,6 +40,11 @@ function existingDoc(overrides = {}) {
     bio: 'bio antiga',
     avatar: null,
     banner: null,
+    inviteCode: 'ABCD2345',
+    publicId: 'pub-1',
+    avatarDecorationId: null,
+    monthlyDonorExpiresAt: null,
+    referredByUid: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-02T00:00:00Z'),
     save: vi.fn(async function save() {
@@ -65,6 +71,12 @@ describe('toProfileJson', () => {
       avatar: { fileId: 'avatar-1', url: 'https://cdn.v0x.lol/avatar-1.png', mimeType: 'image/png' },
       banner: null,
       badges: [],
+      avatarDecorationId: null,
+      avatarDecoration: null,
+      monthlyDonor: { active: false, expiresAt: null, daysRemaining: 0 },
+      inviteCode: 'ABCD2345',
+      publicId: 'pub-1',
+      referredByUid: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });

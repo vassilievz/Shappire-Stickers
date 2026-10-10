@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserRound } from 'lucide-react';
 import type { PublicAuthor } from '@shappire/contracts';
+import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
 import { useTranslation } from '@/i18n';
 import { formatRelative } from '@/shared/utils/format';
 
@@ -14,23 +13,17 @@ export function CreatorHeader({
   publishedAt?: string | null;
 }) {
   const { t } = useTranslation();
-  const [avatarFailed, setAvatarFailed] = useState(false);
   const profilePath = author?.username ? `/comunidade/criador/${author.username}` : null;
-  const avatarUrl = author?.avatar?.url;
-  const showAvatar = avatarUrl && !avatarFailed;
+  const avatarUrl = author?.avatar?.url ?? null;
   const publishedLabel = publishedAt ? formatRelative(publishedAt) : null;
 
-  const avatarNode = showAvatar ? (
-    <img
+  const avatarNode = (
+    <DecoratedAvatar
       src={avatarUrl}
-      alt=""
-      className="size-11 rounded-full border border-line object-cover"
-      onError={() => setAvatarFailed(true)}
+      size="md"
+      decoration={author?.avatarDecoration}
+      borderClassName="border-line"
     />
-  ) : (
-    <div className="flex size-11 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-muted">
-      <UserRound className="size-5" aria-hidden />
-    </div>
   );
 
   const identity = (

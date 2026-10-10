@@ -26,6 +26,16 @@ export async function shareStickerFile(relativePath: string, mimeType = 'image/w
   }
 }
 
+export async function shareText({ title, text }: { title?: string; text: string }): Promise<void> {
+  try {
+    await Share.share({ title, text, dialogTitle: title ?? 'Compartilhar' });
+  } catch (error) {
+    const appError = toAppError(error);
+    log.warn('Falha ao compartilhar texto', appError);
+    throw appError;
+  }
+}
+
 export async function canShare(): Promise<boolean> {
   try {
     const result = await Share.canShare();

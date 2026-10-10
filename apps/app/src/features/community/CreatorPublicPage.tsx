@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, UserRound } from 'lucide-react';
+import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
 import { Button, EmptyState, Spinner } from '@/shared/components/primitives';
 import { useTranslation } from '@/i18n';
 import {
@@ -118,13 +119,11 @@ export function CreatorPublicPage() {
         {t('common.back')}
       </button>
       <div className="flex items-center gap-4">
-        {profile.avatar?.url ? (
-          <img src={profile.avatar.url} alt="" className="size-16 rounded-full object-cover" />
-        ) : (
-          <div className="flex size-16 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-            <UserRound aria-hidden />
-          </div>
-        )}
+        <DecoratedAvatar
+          src={profile.avatar?.url ?? null}
+          size="lg"
+          decoration={profile.avatarDecoration}
+        />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-semibold text-ink">{profile.displayName}</h1>
           {profile.username ? <p className="text-[13px] text-ink-muted">@{profile.username}</p> : null}

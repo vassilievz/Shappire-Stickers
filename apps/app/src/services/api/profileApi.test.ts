@@ -49,6 +49,11 @@ describe('fetchProfile', () => {
       avatar: apiProfileBody.avatar,
       banner: null,
       badges: [],
+      avatarDecorationId: null,
+      avatarDecoration: null,
+      monthlyDonor: undefined,
+      inviteCode: null,
+      publicId: null,
       createdAt: '2026-10-01T00:00:00.000Z',
       updatedAt: '2026-10-02T00:00:00.000Z',
     });

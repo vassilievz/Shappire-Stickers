@@ -37,7 +37,14 @@ export type AppErrorCode =
   | 'USERNAME_TAKEN'
   | 'RATE_LIMIT_EXCEEDED'
   | 'UPLOAD_FAILED'
-  | 'API_NOT_CONFIGURED';
+  | 'API_NOT_CONFIGURED'
+  | 'MONTHLY_DONOR_REQUIRED'
+  | 'INVALID_DECORATION'
+  | 'INVITE_INVALID'
+  | 'INVITE_NOT_ELIGIBLE'
+  | 'INVITE_ALREADY_APPLIED'
+  | 'REWARD_NOT_AVAILABLE'
+  | 'PAYMENT_NOT_FOUND';
 
 export interface AppErrorOptions {
   cause?: unknown;

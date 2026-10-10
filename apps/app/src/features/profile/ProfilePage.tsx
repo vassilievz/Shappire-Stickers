@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, Heart, ImageOff, Layers, Pencil, Settings, UserRound } from 'lucide-react';
+import { ChevronRight, Heart, ImageOff, Layers, Pencil, Settings, Sparkles, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button, Card, EmptyState, Spinner } from '@/shared/components/primitives';
 import { BlurFade } from '@/shared/components/motion';
-import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
 import { useAuthStore } from '@/state/authStore';
 import { useProfileStats, useProfileStore } from '@/state/profileStore';
@@ -11,33 +10,7 @@ import { EditProfileSheet } from './EditProfileSheet';
 import { InitialSupporterBadge } from './components/InitialSupporterBadge';
 import { INITIAL_SUPPORTER_BADGE } from '@shappire/contracts';
 import { formatDate } from '@/shared/utils/format';
-
-function AvatarMedia({ src, className }: { src: string | null; className?: string }) {
-  const { t } = useTranslation();
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
-
-  if (!src || failed) {
-    return (
-      <div
-        className={cx(
-          'flex items-center justify-center border-4 border-app bg-surface-2 text-ink-muted',
-          className,
-        )}
-      >
-        <UserRound className="size-9" aria-hidden />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={t('profile.edit.avatarLabel')}
-      className={cx('border-4 border-app bg-surface-2 object-cover', className)}
-      onError={() => setFailed(true)}
-    />
-  );
-}
+import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
 
 function BannerMedia({ src }: { src: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -70,6 +43,12 @@ function ProfileShortcuts({ showMyPublications = false }: { showMyPublications?:
           },
         ]
       : []),
+    {
+      to: '/doador-mensal',
+      icon: Sparkles,
+      title: t('profile.quickMonthlyDonor'),
+      description: t('profile.quickMonthlyDonorDesc'),
+    },
     {
       to: '/apoiar',
       icon: Heart,
@@ -271,7 +250,12 @@ export function ProfilePage() {
 
           <div className="relative px-5 pb-5">
             <div className="-mt-12 mb-3">
-              <AvatarMedia src={avatarSrc} className="size-24 rounded-full text-ink-muted" />
+              <DecoratedAvatar
+                src={avatarSrc}
+                size="xl"
+                decoration={profile.avatarDecoration}
+                className="rounded-full ring-4 ring-app"
+              />
             </div>
 
             <div className="flex flex-col gap-1">

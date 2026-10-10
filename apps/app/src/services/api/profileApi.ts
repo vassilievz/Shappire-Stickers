@@ -1,4 +1,4 @@
-import { API_ROUTES } from '@shappire/contracts';
+import { API_ROUTES, type ActiveAvatarDecoration, type MonthlyDonorStatus } from '@shappire/contracts';
 import { apiRequest, UPLOAD_TIMEOUT_MS } from './client';
 import { getFirebaseAuth } from '@/services/firebase/config';
 import { useAuthStore } from '@/state/authStore';
@@ -20,6 +20,31 @@ const MIME_EXTENSIONS: Record<string, string> = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function sanitizeMonthlyDonor(value: unknown): MonthlyDonorStatus | undefined {
+  if (!isRecord(value)) return undefined;
+  const active = value.active === true;
+  const expiresAt = optionalString(value.expiresAt) ?? null;
+  const daysRemaining = typeof value.daysRemaining === 'number' ? value.daysRemaining : 0;
+  return { active, expiresAt, daysRemaining };
+}
+
+function sanitizeAvatarDecoration(value: unknown): ActiveAvatarDecoration | null {
+  if (!isRecord(value)) return null;
+  const id = optionalString(value.id);
+  const url = optionalString(value.url);
+  const label = optionalString(value.label);
+  if (!id || !url || !label) return null;
+  const overlay = isRecord(value.overlay)
+    ? {
+        scale: typeof value.overlay.scale === 'number' ? value.overlay.scale : 1.18,
+        offsetX: typeof value.overlay.offsetX === 'number' ? value.overlay.offsetX : 0,
+        offsetY: typeof value.overlay.offsetY === 'number' ? value.overlay.offsetY : 0,
+        fit: (value.overlay.fit === 'cover' ? 'cover' : 'contain') as 'contain' | 'cover',
+      }
+    : undefined;
+  return { id, url, label, overlay };
 }
 
 function optionalString(value: unknown): string | undefined {
@@ -58,6 +83,11 @@ export function toUserProfile(uid: string, data: unknown): UserProfile | null {
     badges: Array.isArray(data.badges)
       ? data.badges.filter((b): b is string => typeof b === 'string')
       : [],
+    avatarDecorationId: optionalString(data.avatarDecorationId) ?? null,
+    avatarDecoration: sanitizeAvatarDecoration(data.avatarDecoration),
+    monthlyDonor: sanitizeMonthlyDonor(data.monthlyDonor),
+    inviteCode: optionalString(data.inviteCode) ?? null,
+    publicId: optionalString(data.publicId) ?? null,
     createdAt: optionalString(data.createdAt),
     updatedAt: optionalString(data.updatedAt),
   };

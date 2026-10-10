@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserRound } from 'lucide-react';
+import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
 import type { PublicAuthor } from '@shappire/contracts';
 import { BottomSheet } from '@/shared/components/overlays';
 import { Button, Spinner } from '@/shared/components/primitives';
@@ -115,13 +115,11 @@ export function FollowListSheet({ open, kind, userUid, onClose }: FollowListShee
               key={user.uid}
               className="flex min-h-[52px] items-center gap-3 rounded-[var(--radius-control)] px-1"
             >
-              {user.avatar?.url ? (
-                <img src={user.avatar.url} alt="" className="size-10 rounded-full object-cover" />
-              ) : (
-                <div className="flex size-10 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-                  <UserRound className="size-5" aria-hidden />
-                </div>
-              )}
+              <DecoratedAvatar
+                src={user.avatar?.url ?? null}
+                size="sm"
+                decoration={user.avatarDecoration}
+              />
               <div className="min-w-0 flex-1">
                 {user.username ? (
                   <Link

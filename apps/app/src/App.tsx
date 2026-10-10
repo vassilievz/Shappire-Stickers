@@ -11,6 +11,7 @@ import { MyPublicationsPage } from '@/features/community/MyPublicationsPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
 import { DonationsPage } from '@/features/donations/DonationsPage';
+import { MonthlyDonorPage } from '@/features/monthly-donor/MonthlyDonorPage';
 import { CommunityPage } from '@/features/community/CommunityPage';
 import { AlbumDetailPage } from '@/features/community/AlbumDetailPage';
 import { CreatorPublicPage } from '@/features/community/CreatorPublicPage';
@@ -63,6 +64,7 @@ export function App() {
           <Route path="/comunidade/minhas-publicacoes" element={<MyPublicationsPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/apoiar" element={<DonationsPage />} />
+          <Route path="/doador-mensal" element={<MonthlyDonorPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>

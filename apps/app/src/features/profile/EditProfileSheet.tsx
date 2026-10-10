@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ImageOff, RotateCcw, Smartphone, Trash2, UserRound } from 'lucide-react';
+import { ImageOff, RotateCcw, Smartphone, Sparkles, Trash2, UserRound } from 'lucide-react';
+import { AvatarDecorationSheet } from './AvatarDecorationSheet';
 import { BottomSheet, ConfirmDialog } from '@/shared/components/overlays';
 import { Button } from '@/shared/components/primitives';
 import { TextArea, TextInput } from '@/shared/components/inputs';
@@ -158,6 +159,7 @@ export function EditProfileSheet({ open, onClose }: { open: boolean; onClose: ()
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatarAction, setAvatarAction] = useState<ProfileImageAction>({ kind: 'keep' });
+  const [decorationOpen, setDecorationOpen] = useState(false);
   const [bannerAction, setBannerAction] = useState<ProfileImageAction>({ kind: 'keep' });
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
@@ -292,6 +294,16 @@ export function EditProfileSheet({ open, onClose }: { open: boolean; onClose: ()
             onPickDevice={() => void pickFromDevice('avatar')}
           />
 
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            icon={<Sparkles className="size-4" aria-hidden />}
+            onClick={() => setDecorationOpen(true)}
+          >
+            {t('avatarDecorations.editEntry')}
+          </Button>
+
           <ImageSlotEditor
             action={bannerAction}
             current={profile.banner}
@@ -326,6 +338,8 @@ export function EditProfileSheet({ open, onClose }: { open: boolean; onClose: ()
           </div>
         </div>
       </BottomSheet>
+
+      <AvatarDecorationSheet open={decorationOpen} onClose={() => setDecorationOpen(false)} />
 
       <ConfirmDialog
         open={confirmDiscard}

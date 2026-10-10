@@ -3,6 +3,7 @@ import { PUBLICATION_VISIBILITY } from '@shappire/contracts';
 import { User } from '../models/User.js';
 import { UserBlock } from '../models/UserBlock.js';
 import { ApiError } from '../utils/apiError.js';
+import { resolvePublicAvatarDecoration } from './avatarDecorationService.js';
 
 export async function getSocialPreferences(uid) {
   const doc = await User.findOne({ firebaseUid: uid }).select('preferences');
@@ -86,12 +87,14 @@ export async function assertInteractionAllowed(actorUid, targetUid) {
 
 export function toPublicAuthor(doc) {
   if (!doc) return null;
+  const decoration = resolvePublicAvatarDecoration(doc);
   return {
     uid: doc.firebaseUid,
     displayName: doc.displayName,
     username: doc.username ?? null,
     avatar: doc.avatar ? { ...doc.avatar } : null,
     badges: Array.isArray(doc.badges) ? [...doc.badges] : [],
+    avatarDecoration: decoration,
   };
 }
 
@@ -99,7 +102,7 @@ export async function loadAuthorsByUid(uids) {
   const unique = [...new Set(uids.filter(Boolean))];
   if (unique.length === 0) return new Map();
   const users = await User.find({ firebaseUid: { $in: unique } })
-    .select('firebaseUid displayName username avatar badges')
+    .select('firebaseUid displayName username avatar badges avatarDecorationId monthlyDonorExpiresAt')
     .lean();
   const map = new Map();
   for (const user of users) {

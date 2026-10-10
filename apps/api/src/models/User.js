@@ -56,6 +56,34 @@ const userSchema = new mongoose.Schema(
     },
     followerCount: { type: Number, default: 0, min: 0 },
     followingCount: { type: Number, default: 0, min: 0 },
+    publicId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    inviteCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    referredByUid: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    avatarDecorationId: {
+      type: String,
+      default: null,
+    },
+    monthlyDonorExpiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    referralQualifiedCount: { type: Number, default: 0, min: 0 },
+    referralRewardsClaimed: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

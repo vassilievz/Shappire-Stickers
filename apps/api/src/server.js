@@ -11,6 +11,10 @@ import { profileRouter } from './routes/profile.js';
 import { donationRouter } from './routes/donation.js';
 import { publicationsRouter } from './routes/publications.js';
 import { socialRouter } from './routes/social.js';
+import { avatarDecorationsRouter } from './routes/avatarDecorations.js';
+import { monthlyDonorRouter } from './routes/monthlyDonor.js';
+import { invitesRouter } from './routes/invites.js';
+import { avatarDecorationProfileRouter } from './routes/avatarDecorationProfile.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -32,6 +36,10 @@ export function createApp() {
   app.use(donationRouter);
   app.use(publicationsRouter);
   app.use(socialRouter);
+  app.use(avatarDecorationsRouter);
+  app.use(monthlyDonorRouter);
+  app.use(invitesRouter);
+  app.use(avatarDecorationProfileRouter);
   app.use((_req, res) => {
     res.status(404).json({ error: 'NOT_FOUND', message: 'Rota não encontrada.' });
   });

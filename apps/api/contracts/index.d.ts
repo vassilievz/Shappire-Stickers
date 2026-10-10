@@ -51,6 +51,24 @@ export const DONATION_AMOUNTS: readonly number[];
 export const DONATION_MIN_AMOUNT: number;
 export const DONATION_MAX_AMOUNT: number;
 
+export const MONTHLY_DONOR_AMOUNT_BRL: number;
+export const MONTHLY_DONOR_PERIOD_DAYS: number;
+export const REFERRAL_INVITES_PER_REWARD: number;
+export const REFERRAL_APPLY_MAX_ACCOUNT_AGE_MS: number;
+export const INVITE_CODE_LENGTH: number;
+export const INVITE_CODE_PATTERN: RegExp;
+
+export const MONTHLY_DONOR_BENEFIT_SOURCES: {
+  readonly payment: 'payment';
+  readonly referralWelcome: 'referral_welcome';
+  readonly referralReward: 'referral_reward';
+};
+
+export const REFERRAL_STATUSES: {
+  readonly qualified: 'qualified';
+  readonly disqualified: 'disqualified';
+};
+
 export interface ApiRoutes {
   readonly health: '/health';
   readonly profile: '/api/profile';
@@ -79,6 +97,16 @@ export interface ApiRoutes {
   collect(publicationId: string): string;
   readonly report: '/api/social/reports';
   block(uid: string): string;
+  readonly avatarDecorationsCatalog: '/api/avatar-decorations/catalog';
+  readonly profileAvatarDecoration: '/api/profile/avatar-decoration';
+  readonly monthlyDonorStatus: '/api/monthly-donor/status';
+  readonly monthlyDonorCharges: '/api/monthly-donor/charges';
+  monthlyDonorCharge(chargeId: string): string;
+  monthlyDonorChargeStatus(chargeId: string): string;
+  readonly invitesMe: '/api/invites/me';
+  readonly invitesApply: '/api/invites/apply';
+  readonly invitesProgress: '/api/invites/progress';
+  readonly invitesRedeem: '/api/invites/redeem';
 }
 export const API_ROUTES: ApiRoutes;
 
@@ -104,7 +132,15 @@ export type ApiErrorCode =
   | 'ALREADY_COLLECTED'
   | 'BLOCKED'
   | 'ADULT_CONTENT_RESTRICTED'
-  | 'CONFLICT';
+  | 'CONFLICT'
+  | 'MONTHLY_DONOR_REQUIRED'
+  | 'INVALID_DECORATION'
+  | 'INVITE_INVALID'
+  | 'INVITE_NOT_ELIGIBLE'
+  | 'INVITE_ALREADY_APPLIED'
+  | 'INVITE_SELF'
+  | 'REWARD_NOT_AVAILABLE'
+  | 'PAYMENT_NOT_FOUND';
 
 /** Corpo de erro padrão devolvido pela API. */
 export interface ApiErrorBody {
@@ -176,12 +212,94 @@ export interface PublicationDetail extends PublicationSummary {
   localPackId: string | null;
 }
 
+export interface AvatarDecorationOverlay {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  fit: 'contain' | 'cover';
+}
+
+export interface AvatarDecorationCatalogItem {
+  id: string;
+  label: string;
+  category: string;
+  url: string;
+  emoji?: string;
+  overlay?: AvatarDecorationOverlay;
+}
+
+export interface AvatarDecorationCatalogResponse {
+  version: number;
+  itemCount: number;
+  licenseNote: string;
+  items: AvatarDecorationCatalogItem[];
+}
+
+export interface ActiveAvatarDecoration {
+  id: string;
+  url: string;
+  label: string;
+  overlay?: AvatarDecorationOverlay;
+}
+
+export interface MonthlyDonorStatus {
+  active: boolean;
+  expiresAt: string | null;
+  daysRemaining: number;
+}
+
+export type MonthlyDonorChargeStatus = DonationStatus;
+
+export interface MonthlyDonorChargeCreateResponse {
+  chargeId: string;
+  amount: number;
+  copyPaste: string;
+  expiresAt: string | null;
+  status: MonthlyDonorChargeStatus;
+}
+
+export interface MonthlyDonorChargeStatusResponse {
+  chargeId: string;
+  status: MonthlyDonorChargeStatus;
+  paidAt: string | null;
+  monthlyDonor: MonthlyDonorStatus;
+  badgeGranted: boolean;
+}
+
+export interface InviteMeResponse {
+  inviteCode: string;
+  publicId: string;
+}
+
+export interface InviteProgressResponse {
+  inviteCode: string;
+  qualifiedInvites: number;
+  invitesTowardNextReward: number;
+  invitesPerReward: number;
+  rewardsAvailable: number;
+  rewardsClaimed: number;
+  totalQualifiedInvites: number;
+  hasAppliedInvite: boolean;
+}
+
+export interface InviteApplyResponse {
+  applied: boolean;
+  monthlyDonor: MonthlyDonorStatus;
+}
+
+export interface InviteRedeemResponse {
+  redeemed: boolean;
+  monthlyDonor: MonthlyDonorStatus;
+  rewardsAvailable: number;
+}
+
 export interface PublicAuthor {
   uid: string;
   displayName: string;
   username: string | null;
   avatar: HostedImageMeta | null;
   badges: string[];
+  avatarDecoration?: ActiveAvatarDecoration | null;
 }
 
 export interface PublicProfile extends PublicAuthor {

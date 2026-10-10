@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, UserRound, UsersRound } from 'lucide-react';
+import { Search, UsersRound } from 'lucide-react';
 import { Button, EmptyState, Spinner } from '@/shared/components/primitives';
 import { useTranslation } from '@/i18n';
 import { useAuthStore } from '@/state/authStore';
@@ -20,6 +20,7 @@ import { useLibraryStore } from '@/state/libraryStore';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { PUBLICATION_SEARCH_MAX_LENGTH } from '@shappire/contracts';
 import { useCommunityStore } from '@/state/communityStore';
+import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
 
 const SEARCH_MIN = 2;
 
@@ -301,13 +302,11 @@ export function CommunityPage() {
                         to={profile.username ? `/comunidade/criador/${profile.username}` : '#'}
                         className="flex min-h-[48px] items-center gap-3 rounded-[var(--radius-control)] px-2 hover:bg-surface-2"
                       >
-                        {profile.avatar?.url ? (
-                          <img src={profile.avatar.url} alt="" className="size-10 rounded-full object-cover" />
-                        ) : (
-                          <div className="flex size-10 items-center justify-center rounded-full bg-surface-2">
-                            <UserRound className="size-5 text-ink-muted" aria-hidden />
-                          </div>
-                        )}
+                        <DecoratedAvatar
+                          src={profile.avatar?.url ?? null}
+                          size="sm"
+                          decoration={profile.avatarDecoration}
+                        />
                         <div className="min-w-0">
                           <p className="truncate text-[14px] font-medium text-ink">{profile.displayName}</p>
                           {profile.username ? (

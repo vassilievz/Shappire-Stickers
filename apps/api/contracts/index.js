@@ -66,6 +66,25 @@ export const DONATION_AMOUNTS = Object.freeze([5, 10, 20, 50, 100]);
 export const DONATION_MIN_AMOUNT = 5;
 export const DONATION_MAX_AMOUNT = 5000;
 
+/** Doador Mensal — acesso premium temporário (PIX manual, sem recorrência). */
+export const MONTHLY_DONOR_AMOUNT_BRL = 5;
+export const MONTHLY_DONOR_PERIOD_DAYS = 30;
+export const REFERRAL_INVITES_PER_REWARD = 5;
+export const REFERRAL_APPLY_MAX_ACCOUNT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+export const INVITE_CODE_LENGTH = 8;
+export const INVITE_CODE_PATTERN = /^[A-HJ-NP-Z2-9]{8}$/;
+
+export const MONTHLY_DONOR_BENEFIT_SOURCES = Object.freeze({
+  payment: 'payment',
+  referralWelcome: 'referral_welcome',
+  referralReward: 'referral_reward',
+});
+
+export const REFERRAL_STATUSES = Object.freeze({
+  qualified: 'qualified',
+  disqualified: 'disqualified',
+});
+
 export const API_ROUTES = Object.freeze({
   health: '/health',
   profile: '/api/profile',
@@ -95,6 +114,16 @@ export const API_ROUTES = Object.freeze({
   collect: (publicationId) => `/api/social/publications/${publicationId}/collect`,
   report: '/api/social/reports',
   block: (uid) => `/api/social/users/${uid}/block`,
+  avatarDecorationsCatalog: '/api/avatar-decorations/catalog',
+  profileAvatarDecoration: '/api/profile/avatar-decoration',
+  monthlyDonorStatus: '/api/monthly-donor/status',
+  monthlyDonorCharges: '/api/monthly-donor/charges',
+  monthlyDonorCharge: (chargeId) => `/api/monthly-donor/charges/${chargeId}`,
+  monthlyDonorChargeStatus: (chargeId) => `/api/monthly-donor/charges/${chargeId}/status`,
+  invitesMe: '/api/invites/me',
+  invitesApply: '/api/invites/apply',
+  invitesProgress: '/api/invites/progress',
+  invitesRedeem: '/api/invites/redeem',
 });
 
 /**
@@ -123,4 +152,13 @@ export const API_ERROR_CODES = Object.freeze([
   'BLOCKED',
   'ADULT_CONTENT_RESTRICTED',
   'CONFLICT',
+  'MONTHLY_DONOR_REQUIRED',
+  'INVALID_DECORATION',
+  'INVITE_INVALID',
+  'INVITE_NOT_ELIGIBLE',
+  'INVITE_ALREADY_APPLIED',
+  'INVITE_SELF',
+  'REWARD_NOT_AVAILABLE',
+  'PAYMENT_NOT_FOUND',
 ]);
+

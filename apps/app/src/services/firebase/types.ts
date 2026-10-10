@@ -3,6 +3,7 @@
  */
 
 import type { ProfileImage } from '@/domain/profile';
+import type { ActiveAvatarDecoration, MonthlyDonorStatus } from '@shappire/contracts';
 
 export interface AuthUser {
   uid: string;
@@ -22,6 +23,11 @@ export interface UserProfile {
   avatar: ProfileImage | null;
   banner: ProfileImage | null;
   badges?: string[];
+  avatarDecorationId?: string | null;
+  avatarDecoration?: ActiveAvatarDecoration | null;
+  monthlyDonor?: MonthlyDonorStatus;
+  inviteCode?: string | null;
+  publicId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
