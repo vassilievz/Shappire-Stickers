@@ -226,7 +226,7 @@ export function CommunityPage() {
   );
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-5 pb-2">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold text-ink">{t('community.title')}</h1>
         <p className="text-[13px] text-ink-muted">{t('community.unifiedSubtitle')}</p>
@@ -248,7 +248,7 @@ export function CommunityPage() {
           />
         </div>
         {!isSearchMode ? (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex w-full min-w-0 gap-2 overflow-x-auto pb-1 no-scrollbar">
             {(['recent', 'likes', 'collections'] as const).map((key) => (
               <button
                 key={key}

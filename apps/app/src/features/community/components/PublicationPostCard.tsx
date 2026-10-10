@@ -64,11 +64,11 @@ function PublicationPostCardInner({
     <article
       className={cx(
         layout === 'timeline'
-          ? 'border-b border-line py-4 first:pt-0 last:border-b-0'
-          : 'overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface',
+          ? 'min-w-0 w-full border-b border-line py-4 first:pt-0 last:border-b-0'
+          : 'min-w-0 w-full overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface',
       )}
     >
-      <header className="flex items-start gap-2 px-0">
+      <header className="flex min-w-0 items-start gap-2 px-0">
         <CreatorHeader author={author} ownerUid={album.ownerUid} publishedAt={album.publishedAt} />
         {isOwner ? (
           <PublicationOwnerMenu
@@ -132,7 +132,7 @@ function PublicationPostCardInner({
 
       <footer
         className={cx(
-          'mt-3 flex flex-wrap items-center gap-1',
+          'mt-3 flex min-w-0 flex-wrap items-center gap-1',
           layout === 'compact' && 'px-3 pb-3',
         )}
       >
@@ -158,11 +158,11 @@ function PublicationPostCardInner({
           type="button"
           variant="secondary"
           size="sm"
-          className="ml-auto h-9 min-h-[44px]"
+          className="ml-auto h-9 min-h-[44px] max-w-full min-w-0 shrink"
           onClick={onCollect}
         >
-          <Plus className="size-3.5" aria-hidden />
-          <span className="text-[12px]">{t('community.addToCollection')}</span>
+          <Plus className="size-3.5 shrink-0" aria-hidden />
+          <span className="truncate text-[12px]">{t('community.addToCollection')}</span>
         </Button>
       </footer>
 
