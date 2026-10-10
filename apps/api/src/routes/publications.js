@@ -83,6 +83,16 @@ publicationsRouter.delete('/api/publications/:id', requireAuth, publicationWrite
   res.json(result);
 });
 
+publicationsRouter.get('/api/publications/mine', requireAuth, socialReadLimiter, async (req, res) => {
+  const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+  const limit = typeof req.query.limit === 'string' ? req.query.limit : undefined;
+  const page = await publicationService.listOwnerPublications(req.user.uid, req.user.uid, {
+    cursor,
+    limit,
+  });
+  res.json(page);
+});
+
 publicationsRouter.get('/api/publications/:id', optionalAuth, socialReadLimiter, async (req, res) => {
   const publication = await publicationService.getPublicationById(req.params.id, req.user?.uid ?? null);
   res.json(publication);

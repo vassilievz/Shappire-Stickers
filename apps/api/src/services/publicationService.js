@@ -266,7 +266,19 @@ export async function unpublishPublication(uid, publicationId) {
 }
 
 export async function deletePublication(uid, publicationId) {
-  const doc = await assertOwner(publicationId, uid);
+  if (!mongoose.Types.ObjectId.isValid(publicationId)) {
+    throw new ApiError(404, 'PUBLICATION_NOT_FOUND', 'Publicação não encontrada.');
+  }
+  const doc = await Publication.findById(publicationId);
+  if (!doc) {
+    throw new ApiError(404, 'PUBLICATION_NOT_FOUND', 'Publicação não encontrada.');
+  }
+  if (doc.ownerUid !== uid) {
+    throw new ApiError(403, 'FORBIDDEN', 'Você não pode editar esta publicação.');
+  }
+  if (doc.status === 'removed') {
+    return { ok: true };
+  }
   doc.status = 'removed';
   doc.visibility = PUBLICATION_VISIBILITY.private;
   doc.publishedAt = null;

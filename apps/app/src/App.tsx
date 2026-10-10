@@ -7,6 +7,7 @@ import { HomePage } from '@/features/home/HomePage';
 import { PackDetailPage } from '@/features/packs/PackDetailPage';
 import { PacksPage } from '@/features/packs/PacksPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
+import { MyPublicationsPage } from '@/features/community/MyPublicationsPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
 import { DonationsPage } from '@/features/donations/DonationsPage';
@@ -59,6 +60,7 @@ export function App() {
           <Route path="/comunidade" element={<CommunityPage />} />
           <Route path="/comunidade/album/:publicationId" element={<AlbumDetailPage />} />
           <Route path="/comunidade/criador/:username" element={<CreatorPublicPage />} />
+          <Route path="/comunidade/minhas-publicacoes" element={<MyPublicationsPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/apoiar" element={<DonationsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />

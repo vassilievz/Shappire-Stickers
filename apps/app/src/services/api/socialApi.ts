@@ -94,6 +94,14 @@ export async function deletePublication(id: string): Promise<void> {
   await apiRequest(API_ROUTES.publication(id), { method: 'DELETE' });
 }
 
+export async function fetchMyPublications(
+  cursor?: string | null,
+): Promise<Page<PublicationSummary>> {
+  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+  const { body } = await apiRequest(`${API_ROUTES.publicationsMine}${qs}`);
+  return body as Page<PublicationSummary>;
+}
+
 export async function uploadPublicationSticker(
   publicationId: string,
   stickerId: string,

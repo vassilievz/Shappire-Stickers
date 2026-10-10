@@ -16,14 +16,13 @@ import {
 import { loadProjectSummaries, type ProjectSummary } from '@/services/storage/projectRepository';
 import { friendlyMessage } from '@/shared/errors';
 import { showToast } from './toastStore';
-import { deletePublication } from '@/services/api/socialApi';
+import { removeSocialPublication } from '@/services/community/removeSocialPublicationService';
 import {
   getPackSocial,
   isImportedPackSocial,
   removePackSocial,
 } from '@/services/storage/packSocialRepository';
 import { useAuthStore } from './authStore';
-import { useCommunityStore } from './communityStore';
 
 const log = createLogger('library');
 
@@ -117,9 +116,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const isAuthenticated = useAuthStore.getState().isAuthenticated;
     if (social?.publicationId && isAuthenticated && !isImportedPackSocial(social)) {
       try {
-        await deletePublication(social.publicationId);
-        useCommunityStore.getState().markPublicationRemoved(social.publicationId);
-        await removePackSocial(packId);
+        await removeSocialPublication(social.publicationId);
       } catch (err) {
         showToast(friendlyMessage(err), 'error');
         throw err;

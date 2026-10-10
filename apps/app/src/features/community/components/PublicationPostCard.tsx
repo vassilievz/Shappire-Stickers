@@ -6,6 +6,7 @@ import { Button } from '@/shared/components/primitives';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
 import { SocialOverflowMenu } from './SocialOverflowMenu';
+import { PublicationOwnerMenu } from './PublicationOwnerMenu';
 import { CreatorHeader } from './CreatorHeader';
 import { ReportSheet } from './ReportSheet';
 import { ConfirmDialog } from '@/shared/components/overlays';
@@ -41,6 +42,7 @@ function PublicationPostCardInner({
   const [blocking, setBlocking] = useState(false);
 
   const authorUid = author?.uid ?? album.ownerUid;
+  const isOwner = Boolean(isAuthenticated && currentUid && authorUid === currentUid);
   const canModerate = isAuthenticated && authorUid && authorUid !== currentUid;
 
   const confirmBlock = async () => {
@@ -68,7 +70,13 @@ function PublicationPostCardInner({
     >
       <header className="flex items-start gap-2 px-0">
         <CreatorHeader author={author} ownerUid={album.ownerUid} publishedAt={album.publishedAt} />
-        {canModerate ? (
+        {isOwner ? (
+          <PublicationOwnerMenu
+            publicationId={album.id}
+            visibility={album.visibility}
+            publishedAt={album.publishedAt}
+          />
+        ) : canModerate ? (
           <SocialOverflowMenu
             actions={[
               { id: 'report', label: t('community.report'), onClick: () => setReportOpen(true) },

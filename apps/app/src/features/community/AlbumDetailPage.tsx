@@ -22,6 +22,7 @@ import { importPublicationToLibrary } from '@/services/community/importPublicati
 import { useLibraryStore } from '@/state/libraryStore';
 import { useAuthStore } from '@/state/authStore';
 import { CreatorHeader } from './components/CreatorHeader';
+import { PublicationOwnerMenu } from './components/PublicationOwnerMenu';
 
 export function AlbumDetailPage() {
   const { publicationId = '' } = useParams();
@@ -128,6 +129,7 @@ export function AlbumDetailPage() {
   };
 
   const authorUid = album.author?.uid ?? album.ownerUid;
+  const isOwner = Boolean(isAuthenticated && currentUid && authorUid === currentUid);
   const canModerateAuthor = isAuthenticated && authorUid && authorUid !== currentUid;
 
   const confirmBlock = async () => {
@@ -156,7 +158,15 @@ export function AlbumDetailPage() {
           <ArrowLeft className="size-4" aria-hidden />
           {t('common.back')}
         </button>
-        {canModerateAuthor ? (
+        {isOwner ? (
+          <PublicationOwnerMenu
+            publicationId={album.id}
+            localPackId={album.localPackId}
+            visibility={album.visibility}
+            publishedAt={album.publishedAt}
+            afterDeleteNavigateTo="/comunidade/minhas-publicacoes"
+          />
+        ) : canModerateAuthor ? (
           <SocialOverflowMenu
             actions={[
               {

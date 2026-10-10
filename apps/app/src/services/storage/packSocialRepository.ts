@@ -42,3 +42,12 @@ export async function removePackSocial(packId: string): Promise<void> {
   void _removed;
   await writeJson(FILE, { schemaVersion: SCHEMA_VERSION, byPackId: rest });
 }
+
+export async function findPackIdByPublicationId(publicationId: string): Promise<string | null> {
+  const { data } = await readJson<PackSocialDocument>(FILE);
+  const entries = data?.byPackId ?? {};
+  for (const [packId, record] of Object.entries(entries)) {
+    if (record.publicationId === publicationId) return packId;
+  }
+  return null;
+}

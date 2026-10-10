@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, Heart, ImageOff, Pencil, Settings, UserRound } from 'lucide-react';
+import { ChevronRight, Heart, ImageOff, Layers, Pencil, Settings, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button, Card, EmptyState, Spinner } from '@/shared/components/primitives';
 import { BlurFade } from '@/shared/components/motion';
@@ -57,9 +57,19 @@ function BannerMedia({ src }: { src: string | null }) {
   );
 }
 
-function ProfileShortcuts() {
+function ProfileShortcuts({ showMyPublications = false }: { showMyPublications?: boolean }) {
   const { t } = useTranslation();
   const links = [
+    ...(showMyPublications
+      ? [
+          {
+            to: '/comunidade/minhas-publicacoes',
+            icon: Layers,
+            title: t('profile.quickMyPublications'),
+            description: t('profile.quickMyPublicationsDesc'),
+          },
+        ]
+      : []),
     {
       to: '/apoiar',
       icon: Heart,
@@ -175,7 +185,7 @@ export function ProfilePage() {
               >
                 {t('profile.signedOut.signIn')}
               </Button>
-              <ProfileShortcuts />
+              <ProfileShortcuts showMyPublications={false} />
             </div>
           }
         />
@@ -300,7 +310,7 @@ export function ProfilePage() {
       </BlurFade>
 
       <BlurFade delayMs={200} durationMs={320}>
-        <ProfileShortcuts />
+        <ProfileShortcuts showMyPublications />
       </BlurFade>
 
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />

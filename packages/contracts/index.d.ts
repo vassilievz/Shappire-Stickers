@@ -61,6 +61,7 @@ export interface ApiRoutes {
   readonly socialPreferences: '/api/social/preferences';
   readonly socialAdultEligibility: '/api/social/preferences/adult-eligibility';
   readonly publications: '/api/publications';
+  readonly publicationsMine: '/api/publications/mine';
   publication(id: string): string;
   publicationPublish(id: string): string;
   publicationSticker(id: string, stickerId: string): string;

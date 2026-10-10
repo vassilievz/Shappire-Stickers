@@ -30,8 +30,8 @@ vi.mock('@/services/storage/packSocialRepository', () => ({
   ),
 }));
 
-vi.mock('@/services/api/socialApi', () => ({
-  deletePublication: vi.fn(),
+vi.mock('@/services/community/removeSocialPublicationService', () => ({
+  removeSocialPublication: vi.fn(),
 }));
 
 vi.mock('@/state/toastStore', () => ({
@@ -40,7 +40,7 @@ vi.mock('@/state/toastStore', () => ({
 
 import { deletePack } from '@/services/packs/packService';
 import { getPackSocial, removePackSocial } from '@/services/storage/packSocialRepository';
-import { deletePublication } from '@/services/api/socialApi';
+import { removeSocialPublication } from '@/services/community/removeSocialPublicationService';
 
 const packId = 'pack-local-1';
 const publicationId = '507f1f77bcf86cd799439011';
@@ -69,18 +69,20 @@ describe('libraryStore.removePack', () => {
     });
   });
 
-  it('pacote publicado chama deletePublication antes de apagar localmente', async () => {
+  it('pacote publicado chama removeSocialPublication antes de apagar localmente', async () => {
     vi.mocked(getPackSocial).mockResolvedValue({
       publicationId,
       visibility: 'public',
       lastSyncedAt: new Date().toISOString(),
     });
-    vi.mocked(deletePublication).mockResolvedValue(undefined);
+    vi.mocked(removeSocialPublication).mockImplementation(async (id) => {
+      useCommunityStore.getState().markPublicationRemoved(id);
+    });
 
     await useLibraryStore.getState().removePack(packId);
 
-    expect(deletePublication).toHaveBeenCalledWith(publicationId);
-    expect(removePackSocial).toHaveBeenCalledWith(packId);
+    expect(removeSocialPublication).toHaveBeenCalledWith(publicationId);
+    expect(removePackSocial).not.toHaveBeenCalled();
     expect(deletePack).toHaveBeenCalledWith(packId);
     expect(useCommunityStore.getState().removedPublicationIds).toContain(publicationId);
   });
@@ -91,14 +93,14 @@ describe('libraryStore.removePack', () => {
       visibility: 'public',
       lastSyncedAt: new Date().toISOString(),
     });
-    vi.mocked(deletePublication).mockRejectedValue(new Error('network'));
+    vi.mocked(removeSocialPublication).mockRejectedValue(new Error('network'));
 
     await expect(useLibraryStore.getState().removePack(packId)).rejects.toThrow('network');
     expect(deletePack).not.toHaveBeenCalled();
     expect(useLibraryStore.getState().packs.some((p) => p.id === packId)).toBe(true);
   });
 
-  it('cópia importada não chama deletePublication', async () => {
+  it('cópia importada não chama removeSocialPublication', async () => {
     vi.mocked(getPackSocial).mockResolvedValue({
       publicationId,
       visibility: 'public',
@@ -109,7 +111,7 @@ describe('libraryStore.removePack', () => {
 
     await useLibraryStore.getState().removePack(packId);
 
-    expect(deletePublication).not.toHaveBeenCalled();
+    expect(removeSocialPublication).not.toHaveBeenCalled();
     expect(removePackSocial).toHaveBeenCalledWith(packId);
     expect(deletePack).toHaveBeenCalledWith(packId);
   });
@@ -119,7 +121,7 @@ describe('libraryStore.removePack', () => {
 
     await useLibraryStore.getState().removePack(packId);
 
-    expect(deletePublication).not.toHaveBeenCalled();
+    expect(removeSocialPublication).not.toHaveBeenCalled();
     expect(deletePack).toHaveBeenCalledWith(packId);
   });
 });

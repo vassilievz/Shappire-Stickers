@@ -76,6 +76,7 @@ export const API_ROUTES = Object.freeze({
   socialPreferences: '/api/social/preferences',
   socialAdultEligibility: '/api/social/preferences/adult-eligibility',
   publications: '/api/publications',
+  publicationsMine: '/api/publications/mine',
   publication: (id) => `/api/publications/${id}`,
   publicationPublish: (id) => `/api/publications/${id}/publish`,
   publicationSticker: (id, stickerId) => `/api/publications/${id}/stickers/${stickerId}`,

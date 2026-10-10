@@ -87,6 +87,15 @@ describe('publication removal and public queries', () => {
     });
   });
 
+  it('deletePublication é idempotente quando já removida', async () => {
+    const doc = activePub({ status: 'removed' });
+    Publication.findById.mockResolvedValue(doc);
+
+    const result = await deletePublication('owner-1', pubId);
+    expect(result).toEqual({ ok: true });
+    expect(doc.save).not.toHaveBeenCalled();
+  });
+
   it('getPublicationById retorna 404 para publicação removida', async () => {
     Publication.findById.mockResolvedValue(activePub({ status: 'removed' }));
     await expect(getPublicationById(pubId, null)).rejects.toMatchObject({
@@ -127,6 +136,22 @@ describe('publication removal and public queries', () => {
         $text: { $search: 'album' },
       }),
       expect.anything(),
+    );
+  });
+
+  it('listOwnerPublications para o proprietário lista só documentos active do owner', async () => {
+    const lean = vi.fn().mockResolvedValue([]);
+    Publication.find.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({ lean }),
+        }),
+      }),
+    });
+
+    await listOwnerPublications('owner-1', 'owner-1', {});
+    expect(Publication.find).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerUid: 'owner-1', status: 'active' }),
     );
   });
 
