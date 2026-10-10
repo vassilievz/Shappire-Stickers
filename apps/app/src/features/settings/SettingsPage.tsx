@@ -35,10 +35,12 @@ import {
 } from '@/services/storage/storageStats';
 import { useLibraryStore } from '@/state/libraryStore';
 import { showToast } from '@/state/toastStore';
+import { friendlyMessage } from '@/shared/errors';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
 import type { LanguagePreference, ThemePreference } from '@/services/storage/settingsRepository';
 import { useTranslation } from '@/i18n';
+import { useSocialPreferencesStore } from '@/state/socialPreferencesStore';
 import {
   applyOtaUpdate,
   checkOtaUpdate,
@@ -134,6 +136,10 @@ export function SettingsPage() {
   const signOut = useAuthStore((state) => state.signOut);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const socialPrefs = useSocialPreferencesStore((s) => s.preferences);
+  const setShowAdultContent = useSocialPreferencesStore((s) => s.setShowAdultContent);
+  const acknowledgeAdultGate = useSocialPreferencesStore((s) => s.acknowledgeAdultGate);
+  const [adultGateOpen, setAdultGateOpen] = useState(false);
 
   const handleGoogleSignIn = async () => {
     void hapticSelection();
@@ -456,6 +462,53 @@ export function SettingsPage() {
             </div>
         </SettingsCard>
       </section>
+
+      <section className="flex flex-col gap-2">
+        <GroupLabel>{t('settingsContent.group')}</GroupLabel>
+        <SettingsCard>
+          <div className="px-4 py-2">
+            <SwitchField
+              label={t('settingsContent.showAdult')}
+              description={t('settingsContent.showAdultDesc')}
+              checked={socialPrefs.showAdultContent}
+              onChange={(next) => {
+                if (next && !socialPrefs.adultContentEligible) {
+                  setAdultGateOpen(true);
+                  return;
+                }
+                void setShowAdultContent(next);
+              }}
+            />
+          </div>
+        </SettingsCard>
+      </section>
+
+      <Modal open={adultGateOpen} title={t('settingsContent.adultGateTitle')} onClose={() => setAdultGateOpen(false)}>
+        <p className="text-[13px] text-ink-muted">{t('settingsContent.adultGateDesc')}</p>
+        <div className="mt-4 flex flex-col gap-2">
+          <Button
+            type="button"
+            onClick={() => {
+              void acknowledgeAdultGate()
+                .then(() => setShowAdultContent(true))
+                .catch((err: unknown) => {
+                  const code = (err as { code?: string })?.code;
+                  if (code === 'ADULT_CONTENT_RESTRICTED') {
+                    showToast(t('community.adultUnavailable'), 'info');
+                  } else {
+                    showToast(friendlyMessage(err), 'error');
+                  }
+                })
+                .finally(() => setAdultGateOpen(false));
+            }}
+          >
+            {t('settingsContent.adultGateConfirm')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setAdultGateOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </Modal>
 
       <section className="flex flex-col gap-2">
         <GroupLabel>{t('settings.editorAndPacks')}</GroupLabel>

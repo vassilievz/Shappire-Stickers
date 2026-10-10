@@ -9,6 +9,8 @@ import { connectMongo, disconnectMongo } from './config/mongodb.js';
 import { healthRouter } from './routes/health.js';
 import { profileRouter } from './routes/profile.js';
 import { donationRouter } from './routes/donation.js';
+import { publicationsRouter } from './routes/publications.js';
+import { socialRouter } from './routes/social.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -28,6 +30,8 @@ export function createApp() {
   app.use(healthRouter);
   app.use(profileRouter);
   app.use(donationRouter);
+  app.use(publicationsRouter);
+  app.use(socialRouter);
   app.use((_req, res) => {
     res.status(404).json({ error: 'NOT_FOUND', message: 'Rota não encontrada.' });
   });

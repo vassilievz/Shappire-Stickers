@@ -10,6 +10,10 @@ import { ProfilePage } from '@/features/profile/ProfilePage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToolsPage } from '@/features/tools/ToolsPage';
 import { DonationsPage } from '@/features/donations/DonationsPage';
+import { CommunityPage } from '@/features/community/CommunityPage';
+import { AlbumDetailPage } from '@/features/community/AlbumDetailPage';
+import { CreatorPublicPage } from '@/features/community/CreatorPublicPage';
+import { useSocialPreferencesStore } from '@/state/socialPreferencesStore';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
@@ -18,6 +22,7 @@ import { logAnalyticsEvent } from '@/services/firebase';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
+  const hydrateSocialPrefs = useSocialPreferencesStore((state) => state.hydrate);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -28,10 +33,12 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    void hydrateSettings().finally(() => {
-      setIsReady(true);
-    });
-  }, [hydrateSettings]);
+    void hydrateSettings()
+      .then(() => hydrateSocialPrefs())
+      .finally(() => {
+        setIsReady(true);
+      });
+  }, [hydrateSettings, hydrateSocialPrefs]);
 
   useEffect(() => {
     if (isReady) {
@@ -49,6 +56,9 @@ export function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/pacotes" element={<PacksPage />} />
           <Route path="/pacotes/:packId" element={<PackDetailPage />} />
+          <Route path="/comunidade" element={<CommunityPage />} />
+          <Route path="/comunidade/album/:publicationId" element={<AlbumDetailPage />} />
+          <Route path="/comunidade/criador/:username" element={<CreatorPublicPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/apoiar" element={<DonationsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />

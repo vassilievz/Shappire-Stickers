@@ -1,5 +1,10 @@
 import multer from 'multer';
-import { PROFILE_IMAGE_MAX_BYTES, PROFILE_IMAGE_MIME_TYPES } from '@shappire/contracts';
+import {
+  PROFILE_IMAGE_MAX_BYTES,
+  PROFILE_IMAGE_MIME_TYPES,
+  PUBLICATION_COVER_MAX_BYTES,
+  PUBLICATION_STICKER_MAX_BYTES,
+} from '@shappire/contracts';
 import { ApiError } from '../utils/apiError.js';
 
 /**
@@ -26,3 +31,5 @@ function buildUpload(maxBytes) {
 
 export const avatarUpload = buildUpload(PROFILE_IMAGE_MAX_BYTES.avatar);
 export const bannerUpload = buildUpload(PROFILE_IMAGE_MAX_BYTES.banner);
+export const publicationStickerUpload = buildUpload(PUBLICATION_STICKER_MAX_BYTES);
+export const publicationCoverUpload = buildUpload(PUBLICATION_COVER_MAX_BYTES);

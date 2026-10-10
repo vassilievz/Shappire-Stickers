@@ -13,9 +13,11 @@ const UPLOAD_TIMEOUT_MS = 60_000;
 export const OFFLINE_MESSAGE = 'Você está offline. Esta ação precisa de conexão com a internet.';
 
 export interface ApiRequestInit {
-  method?: 'GET' | 'PATCH' | 'POST';
+  method?: 'GET' | 'PATCH' | 'POST' | 'DELETE';
   body?: FormData | string;
   timeoutMs?: number;
+  /** required: sempre exige token; optional: envia se houver sessão; none: sem Authorization */
+  auth?: 'required' | 'optional' | 'none';
 }
 
 export interface ApiResponse {
@@ -41,7 +43,7 @@ export function getApiBaseUrl(): string {
   return base;
 }
 
-async function getAuthToken(): Promise<string> {
+export async function getAuthToken(): Promise<string> {
   let token: string | null = null;
   const webUser = getFirebaseAuth().currentUser;
 
@@ -113,6 +115,18 @@ function mapApiError(apiCode: string, message: string): MappedApiError {
       };
     case 'UPLOAD_FAILED':
       return { code: 'UPLOAD_FAILED', message: message || 'Não foi possível enviar a imagem.' };
+    case 'PUBLICATION_NOT_FOUND':
+      return { code: 'NOT_FOUND', message: message || 'Álbum não encontrado.' };
+    case 'COMMENT_NOT_FOUND':
+      return { code: 'NOT_FOUND', message: message || 'Comentário não encontrado.' };
+    case 'ALREADY_COLLECTED':
+      return { code: 'INVALID_INPUT', message: message || 'Álbum já está na sua coleção.' };
+    case 'BLOCKED':
+      return { code: 'PERMISSION_DENIED', message: message || 'Interação bloqueada.' };
+    case 'ADULT_CONTENT_RESTRICTED':
+      return { code: 'PERMISSION_DENIED', message: message || 'Conteúdo +18 indisponível.' };
+    case 'CONFLICT':
+      return { code: 'INVALID_INPUT', message: message || 'Conflito ao processar a ação.' };
     default:
       return { code: 'UNKNOWN', message: message || 'Ocorreu um erro inesperado.' };
   }
@@ -151,12 +165,23 @@ function toAppErrorFromResponse(status: number, body: unknown): AppError {
   });
 }
 
+async function resolveAuthToken(mode: ApiRequestInit['auth']): Promise<string | null> {
+  const authMode = mode ?? 'required';
+  if (authMode === 'none') return null;
+  try {
+    return await getAuthToken();
+  } catch (error) {
+    if (authMode === 'optional') return null;
+    throw error;
+  }
+}
+
 export async function apiRequest(path: string, init: ApiRequestInit = {}): Promise<ApiResponse> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     throw new AppError('OFFLINE', OFFLINE_MESSAGE);
   }
 
-  const token = await getAuthToken();
+  const token = await resolveAuthToken(init.auth);
   const endpoint = `${getApiBaseUrl()}${path}`;
   const method = init.method ?? 'GET';
 
@@ -168,7 +193,7 @@ export async function apiRequest(path: string, init: ApiRequestInit = {}): Promi
     response = await fetch(endpoint, {
       method,
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(typeof init.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
       },
       body: init.body,

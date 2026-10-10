@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema(
     avatar: { type: profileImageSchema, default: null },
     banner: { type: profileImageSchema, default: null },
     badges: { type: [String], default: [] },
+    preferences: {
+      showAdultContent: { type: Boolean, default: false },
+      adultContentEligible: { type: Boolean, default: false },
+    },
+    followerCount: { type: Number, default: 0, min: 0 },
+    followingCount: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

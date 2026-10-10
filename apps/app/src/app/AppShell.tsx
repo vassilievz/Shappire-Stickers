@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { House, Package, Settings, UserRound, Wrench, Heart } from 'lucide-react';
+import { House, Package, Settings, UserRound, Wrench, Heart, UsersRound } from 'lucide-react';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
 
@@ -9,6 +9,7 @@ export function AppShell() {
   const navItems = [
     { to: '/', label: t('nav.home'), icon: House, end: true },
     { to: '/pacotes', label: t('nav.packs'), icon: Package, end: false },
+    { to: '/comunidade', label: t('nav.community'), icon: UsersRound, end: false },
     { to: '/tools', label: t('nav.tools'), icon: Wrench, end: false },
     { to: '/apoiar', label: t('nav.support'), icon: Heart, end: false },
     { to: '/perfil', label: t('nav.profile'), icon: UserRound, end: false },
@@ -27,11 +28,11 @@ export function AppShell() {
         aria-label={t('common.mainNavigation')}
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-md safe-bottom"
       >
-        <ul className="mx-auto flex w-full max-w-[768px] lg:max-w-[840px] items-stretch justify-around px-2">
+        <ul className="mx-auto flex w-full max-w-[768px] lg:max-w-[840px] items-stretch justify-start gap-0 overflow-x-auto px-1 snap-x snap-mandatory scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <li key={item.to} className="flex-1">
+              <li key={item.to} className="min-w-[4.25rem] flex-1 shrink-0 snap-center">
                 <NavLink
                   to={item.to}
                   end={item.end}

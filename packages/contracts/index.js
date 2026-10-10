@@ -19,6 +19,35 @@ export function normalizeUsername(value) {
 
 export const MAX_DISPLAY_NAME_LENGTH = 40;
 export const MAX_BIO_LENGTH = 160;
+export const MAX_ALBUM_DESCRIPTION_LENGTH = 500;
+export const MAX_COMMENT_LENGTH = 500;
+export const MAX_REPORT_DETAILS_LENGTH = 500;
+export const PUBLICATION_SEARCH_MAX_LENGTH = 80;
+export const PUBLICATION_STICKER_MAX_BYTES = 500 * 1024;
+export const PUBLICATION_COVER_MAX_BYTES = 512 * 1024;
+export const PUBLICATION_MIN_STICKERS = 3;
+export const PUBLICATION_MAX_STICKERS = 30;
+
+export const PUBLICATION_VISIBILITY = Object.freeze({
+  public: 'public',
+  private: 'private',
+});
+
+export const REPORT_REASONS = Object.freeze([
+  'inappropriate',
+  'spam',
+  'harassment',
+  'misleading',
+  'rights',
+  'wrong_adult_rating',
+  'other',
+]);
+
+export const REPORT_TARGET_TYPES = Object.freeze({
+  publication: 'publication',
+  comment: 'comment',
+  user: 'user',
+});
 
 export const PROFILE_IMAGE_MAX_BYTES = Object.freeze({
   avatar: 5 * 1024 * 1024,
@@ -44,6 +73,27 @@ export const API_ROUTES = Object.freeze({
   banner: '/api/profile/banner',
   donations: '/api/donations',
   myDonations: '/api/donations/me',
+  socialPreferences: '/api/social/preferences',
+  socialAdultEligibility: '/api/social/preferences/adult-eligibility',
+  publications: '/api/publications',
+  publication: (id) => `/api/publications/${id}`,
+  publicationPublish: (id) => `/api/publications/${id}/publish`,
+  publicationSticker: (id, stickerId) => `/api/publications/${id}/stickers/${stickerId}`,
+  publicationCover: (id) => `/api/publications/${id}/cover`,
+  feed: '/api/social/feed',
+  explore: '/api/social/explore',
+  search: '/api/social/search',
+  follow: (uid) => `/api/social/users/${uid}/follow`,
+  followers: (uid) => `/api/social/users/${uid}/followers`,
+  following: (uid) => `/api/social/users/${uid}/following`,
+  publicUser: (username) => `/api/social/users/${username}`,
+  like: (publicationId) => `/api/social/publications/${publicationId}/like`,
+  comments: (publicationId) => `/api/social/publications/${publicationId}/comments`,
+  comment: (publicationId, commentId) =>
+    `/api/social/publications/${publicationId}/comments/${commentId}`,
+  collect: (publicationId) => `/api/social/publications/${publicationId}/collect`,
+  report: '/api/social/reports',
+  block: (uid) => `/api/social/users/${uid}/block`,
 });
 
 /**
@@ -66,5 +116,11 @@ export const API_ERROR_CODES = Object.freeze([
   'DONATION_NOT_FOUND',
   'PAYMENT_GATEWAY_ERROR',
   'INVALID_AMOUNT',
+  'PUBLICATION_NOT_FOUND',
+  'COMMENT_NOT_FOUND',
+  'ALREADY_COLLECTED',
+  'BLOCKED',
+  'ADULT_CONTENT_RESTRICTED',
+  'CONFLICT',
 ]);
 

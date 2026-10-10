@@ -61,6 +61,9 @@ import { useSettingsStore } from '@/state/settingsStore';
 import { cx } from '@/shared/utils/cx';
 import { StickerPreview } from './StickerPreview';
 import { BlurFade } from '@/shared/components/motion';
+import { PublishPackSheet } from '@/features/community/PublishPackSheet';
+import { getPackSocial } from '@/services/storage/packSocialRepository';
+import { UsersRound } from 'lucide-react';
 
 type SheetAction = 'none' | 'sticker' | 'add';
 
@@ -83,6 +86,14 @@ export function PackDetailPage() {
   const [metaEditor, setMetaEditor] = useState<{ sticker: StickerRecord } | null>(null);
   const [metaValue, setMetaValue] = useState({ emojis: '' });
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [linkedPublicationId, setLinkedPublicationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getPackSocial(packId).then((record) => {
+      setLinkedPublicationId(record?.publicationId ?? null);
+    });
+  }, [packId]);
 
   const rulesValidation: ValidationResult | null = useMemo(
     () => (pack ? validateStickerPack(pack) : null),
@@ -626,6 +637,27 @@ export function PackDetailPage() {
           </div>
         </section>
       </BlurFade>
+
+      <BlurFade durationMs={280} delayMs={80}>
+        <section className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
+          <SectionTitle title={t('community.publishSection')} description={t('community.publishSectionDesc')} />
+          <Button
+            variant="secondary"
+            fullWidth
+            icon={<UsersRound className="size-4" aria-hidden />}
+            onClick={() => setPublishOpen(true)}
+          >
+            {linkedPublicationId ? t('community.managePublication') : t('community.publishToCommunity')}
+          </Button>
+        </section>
+      </BlurFade>
+
+      <PublishPackSheet
+        open={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        pack={pack}
+        publicationId={linkedPublicationId}
+      />
 
       <section className="flex flex-col gap-3">
         <SectionTitle

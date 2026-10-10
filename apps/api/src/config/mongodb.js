@@ -16,6 +16,12 @@ export async function connectMongo() {
     serverSelectionTimeoutMS: 10_000,
   });
   console.log(`[mongo] conectado — banco: ${env.databaseName}`);
+  const { ensureSocialIndexes } = await import('./ensureIndexes.js');
+  try {
+    await ensureSocialIndexes();
+  } catch (error) {
+    console.warn('[mongo] aviso ao sincronizar índices:', error.message);
+  }
 }
 
 export async function disconnectMongo() {

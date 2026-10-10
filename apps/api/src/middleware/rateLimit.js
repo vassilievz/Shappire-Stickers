@@ -26,3 +26,8 @@ export const imageUploadLimiter = buildLimiter({ windowMs: 60_000, limit: 10 });
 export const donationCreateLimiter = buildLimiter({ windowMs: 60_000, limit: 10 });
 export const donationStatusLimiter = buildLimiter({ windowMs: 60_000, limit: 60 });
 
+export const socialReadLimiter = buildLimiter({ windowMs: 60_000, limit: 120 });
+export const socialWriteLimiter = buildLimiter({ windowMs: 60_000, limit: 40 });
+export const commentWriteLimiter = buildLimiter({ windowMs: 60_000, limit: 20 });
+export const publicationWriteLimiter = buildLimiter({ windowMs: 60_000, limit: 15 });
+
