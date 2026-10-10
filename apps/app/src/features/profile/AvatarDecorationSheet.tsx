@@ -170,7 +170,7 @@ export function AvatarDecorationSheet({
           />
         </label>
 
-        <div className="scroll-fade-y relative max-h-[40dvh] min-h-[120px] overflow-y-auto overscroll-contain">
+        <div className="scroll-fade-y relative max-h-[36dvh] min-h-[120px] overflow-y-auto overscroll-contain">
           {catalogRefreshing && items.length === 0 ? (
             <div className="flex justify-center py-8">
               <Spinner />
@@ -191,7 +191,9 @@ export function AvatarDecorationSheet({
             </ul>
           )}
         </div>
+      </div>
 
+      <div className="sticky bottom-0 z-10 -mx-5 border-t border-line bg-surface/95 px-5 py-3 backdrop-blur">
         {!activeDonor ? (
           <div className="rounded-xl border border-line bg-surface-2/80 p-4 text-center">
             <Sparkles className="mx-auto mb-2 size-5 text-accent" aria-hidden />

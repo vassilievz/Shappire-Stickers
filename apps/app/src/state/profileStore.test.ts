@@ -250,28 +250,58 @@ describe('useProfileStore — save', () => {
 });
 
 describe('useProfileStore — equipAvatarDecoration', () => {
+  const decoration = {
+    id: 'dec-1',
+    url: 'https://cdn.example/dec.png',
+    label: 'Test',
+    overlay: { scale: 1.18, offsetX: 0, offsetY: 0, fit: 'contain' as const },
+  };
   it('aplica otimista e reconcilia com a API', async () => {
     signIn();
     useProfileStore.setState({ profile: cachedProfile, status: 'ready' });
     const remote: UserProfile = {
       ...cachedProfile,
       avatarDecorationId: 'dec-1',
-      avatarDecoration: {
-        id: 'dec-1',
-        url: 'https://cdn.example/dec.png',
-        label: 'Test',
-        overlay: { scale: 1.18, offsetX: 0, offsetY: 0, fit: 'contain' },
-      },
+      avatarDecoration: decoration,
     };
     decorationMocks.saveAvatarDecoration.mockResolvedValue(remote);
 
     const ok = await useProfileStore.getState().equipAvatarDecoration({
       decorationId: 'dec-1',
-      decoration: remote.avatarDecoration!,
+      decoration,
     });
 
     expect(ok).toBe(true);
     expect(useProfileStore.getState().profile?.avatarDecorationId).toBe('dec-1');
     expect(decorationMocks.saveAvatarDecoration).toHaveBeenCalledWith('dec-1');
+  });
+
+  it('mantém decoração se um refresh antigo terminar depois do equip', async () => {
+    signIn();
+    useProfileStore.setState({ profile: cachedProfile, status: 'ready' });
+
+    let resolveStaleRemote: (value: UserProfile | null) => void;
+    profileMocks.loadProfile.mockImplementation(
+      () => new Promise((resolve) => { resolveStaleRemote = resolve; }),
+    );
+
+    void useProfileStore.getState().hydrate();
+    await vi.waitFor(() => expect(useProfileStore.getState().profile).not.toBeNull());
+
+    decorationMocks.saveAvatarDecoration.mockResolvedValue({
+      ...cachedProfile,
+      avatarDecorationId: 'dec-1',
+      avatarDecoration: decoration,
+    });
+
+    await useProfileStore.getState().equipAvatarDecoration({
+      decorationId: 'dec-1',
+      decoration,
+    });
+
+    resolveStaleRemote!(cachedProfile);
+    await vi.waitFor(() => {
+      expect(useProfileStore.getState().profile?.avatarDecorationId).toBe('dec-1');
+    });
   });
 });

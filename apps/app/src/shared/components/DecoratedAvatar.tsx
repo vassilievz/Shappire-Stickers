@@ -42,7 +42,7 @@ export function DecoratedAvatar({
   const avatarPx = SIZE_PX[size];
   const framePx = Math.round(avatarPx * 1.28);
 
-  const showDecoration = Boolean(decoration?.url) && !failed;
+  const showDecoration = Boolean(decoration?.url);
 
   return (
     <div
@@ -77,7 +77,7 @@ export function DecoratedAvatar({
           overlay={decoration!.overlay}
           framePx={avatarPx}
           priority={decorationPriority}
-          className="absolute inset-0 z-[1]"
+          className="absolute inset-0 z-[1] size-full"
         />
       ) : null}
     </div>

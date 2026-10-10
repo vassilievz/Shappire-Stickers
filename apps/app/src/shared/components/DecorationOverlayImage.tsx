@@ -63,9 +63,13 @@ export function DecorationOverlayImage({
   }, [url]);
 
   const showSkeleton = !visible && !failed;
+  const fillsParent = Boolean(className?.includes('inset-0'));
 
   return (
-    <div className={cx('relative flex items-center justify-center', className)} style={{ width: framePx, height: framePx }}>
+    <div
+      className={cx('relative flex items-center justify-center', className)}
+      style={fillsParent ? undefined : { width: framePx, height: framePx }}
+    >
       {showSkeleton ? (
         <span
           className="absolute inset-0 animate-pulse rounded-lg bg-surface-3 motion-reduce:animate-none"

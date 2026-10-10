@@ -37,6 +37,8 @@ interface ProfileState {
 let activeUid: string | null = null;
 let refreshInFlight: Promise<void> | null = null;
 let decorationSaveGeneration = 0;
+/** Incrementado em gravações locais recentes (ex.: decoração) para ignorar refresh obsoleto. */
+let profileContentVersion = 0;
 
 function publishProfile(profile: UserProfile, stale: boolean): void {
   useProfileStore.setState({ profile, status: 'ready', isStale: stale, error: null });
@@ -45,13 +47,37 @@ function publishProfile(profile: UserProfile, stale: boolean): void {
   }
 }
 
+function mergeRemoteWithLocalDecoration(
+  remote: UserProfile,
+  local: UserProfile | null,
+  versionAtRefreshStart: number,
+): UserProfile {
+  if (!local || local.uid !== remote.uid) return remote;
+  if (profileContentVersion <= versionAtRefreshStart) return remote;
+
+  const localDecorationId = local.avatarDecorationId ?? local.avatarDecoration?.id ?? null;
+  const remoteDecorationId = remote.avatarDecorationId ?? remote.avatarDecoration?.id ?? null;
+  if (!localDecorationId || localDecorationId === remoteDecorationId) {
+    return remote;
+  }
+
+  return {
+    ...remote,
+    avatarDecorationId: localDecorationId,
+    avatarDecoration: local.avatarDecoration ?? remote.avatarDecoration,
+  };
+}
+
 async function refreshFromApi(uid: string): Promise<void> {
+  const versionAtRefreshStart = profileContentVersion;
   try {
     const remote = await loadProfile();
     const currentUser = useAuthStore.getState().user;
     if (currentUser?.uid !== uid) return;
     if (remote) {
-      publishProfile(remote, false);
+      const local = useProfileStore.getState().profile;
+      const merged = mergeRemoteWithLocalDecoration(remote, local, versionAtRefreshStart);
+      publishProfile(merged, false);
       void saveCachedProfile(remote).catch((error) =>
         logger.debug('Falha ao gravar cache de perfil:', error),
       );
@@ -138,6 +164,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       avatarDecoration: decoration,
     };
 
+    profileContentVersion += 1;
     publishProfile(optimistic, false);
     void saveCachedProfile(optimistic).catch((error) =>
       logger.debug('Falha ao gravar cache otimista de decoração:', error),
@@ -198,6 +225,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       error: null,
     });
     decorationSaveGeneration = 0;
+    profileContentVersion = 0;
   },
 }));
 
