@@ -61,7 +61,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (initialized) {
       return () => {};
     }
-    initialized = true;
 
     logger.debug('Inicializando listener de autenticação global...');
 
@@ -103,6 +102,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
       }
     });
+
+    initialized = true;
 
     return () => {
       initialized = false;

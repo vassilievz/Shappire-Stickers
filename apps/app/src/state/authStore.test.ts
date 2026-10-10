@@ -6,6 +6,7 @@ import {
   observeAuthState,
   signInWithGoogle as firebaseSignInWithGoogle,
   signOut as firebaseSignOut,
+  syncNativeAuthToWeb,
   type AuthUser,
 } from '@/services/firebase';
 
@@ -14,6 +15,7 @@ vi.mock('@/services/firebase', () => ({
   signInWithGoogle: vi.fn(),
   signOut: vi.fn(),
   logAnalyticsEvent: vi.fn(),
+  syncNativeAuthToWeb: vi.fn(),
 }));
 
 vi.mock('@/services/profile/profileService', () => ({
@@ -26,7 +28,10 @@ const mocks = {
   signOut: vi.mocked(firebaseSignOut),
   logAnalyticsEvent: vi.mocked(logAnalyticsEvent),
   loadProfile: vi.mocked(loadProfile),
+  syncNativeAuthToWeb: vi.mocked(syncNativeAuthToWeb),
 };
+
+let authInitCleanup: (() => void) | undefined;
 
 const authUser: AuthUser = {
   uid: 'user-1',
@@ -67,6 +72,9 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 beforeEach(() => {
+  authInitCleanup?.();
+  authInitCleanup = undefined;
+
   useAuthStore.setState({
     user: null,
     profile: null,
@@ -80,6 +88,7 @@ beforeEach(() => {
   mocks.signOut.mockReset().mockResolvedValue(undefined);
   mocks.logAnalyticsEvent.mockReset().mockResolvedValue(undefined);
   mocks.loadProfile.mockReset().mockResolvedValue(apiProfile);
+  mocks.syncNativeAuthToWeb.mockReset().mockResolvedValue(undefined);
 });
 
 describe('useAuthStore', () => {
@@ -119,7 +128,7 @@ describe('initialize — observeAuthState', () => {
   it('publica o usuário imediatamente e sincroniza o perfil da API em background', async () => {
     const emit = captureObserver();
 
-    const unsubscribe = useAuthStore.getState().initialize();
+    authInitCleanup = useAuthStore.getState().initialize();
     emit(authUser);
 
     // Estado autenticado já visível antes da rede responder (offline-first).
@@ -130,27 +139,26 @@ describe('initialize — observeAuthState', () => {
     await vi.waitFor(() => {
       expect(useAuthStore.getState().profile?.username).toBe('gabriel');
     });
-    unsubscribe();
+    expect(mocks.syncNativeAuthToWeb).toHaveBeenCalled();
   });
 
   it('mantém o perfil local quando o documento ainda não existe na API', async () => {
     mocks.loadProfile.mockResolvedValue(null);
     const emit = captureObserver();
 
-    const unsubscribe = useAuthStore.getState().initialize();
+    authInitCleanup = useAuthStore.getState().initialize();
     emit(authUser);
 
     await flushMicrotasks();
 
     expect(useAuthStore.getState().profile).toEqual(localProfile);
     expect(useAuthStore.getState().error).toBeNull();
-    unsubscribe();
   });
 
   it('não sobrescreve o perfil quando o usuário já trocou durante a sincronização', async () => {
     const emit = captureObserver();
 
-    const unsubscribe = useAuthStore.getState().initialize();
+    authInitCleanup = useAuthStore.getState().initialize();
     emit(authUser);
 
     // Outro usuário entrou antes da resposta da API chegar.
@@ -159,19 +167,17 @@ describe('initialize — observeAuthState', () => {
     await flushMicrotasks();
 
     expect(useAuthStore.getState().profile).toBeNull();
-    unsubscribe();
   });
 
   it('usuário null desloga o estado', () => {
     const emit = captureObserver();
 
-    const unsubscribe = useAuthStore.getState().initialize();
+    authInitCleanup = useAuthStore.getState().initialize();
     emit(authUser);
     emit(null);
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().profile).toBeNull();
-    unsubscribe();
   });
 });
 
