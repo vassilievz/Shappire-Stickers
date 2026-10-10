@@ -9,6 +9,8 @@ export const APP_INFO = {
   version: '0.2.2',
   discordCommunityUrl: 'https://discord.gg/ncT9S6TZ9e',
   publicDownloadUrl: 'https://shappire.tools/stickers',
+  playStoreUrl:
+    'https://play.google.com/store/apps/details?id=com.shappire.stickers',
   repositoryUrl: 'https://github.com/vassilievz/Shappire-Stickers',
   licenseName: 'MIT',
   licenseUrl: 'https://opensource.org/licenses/MIT',

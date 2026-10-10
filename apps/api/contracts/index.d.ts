@@ -107,6 +107,7 @@ export interface ApiRoutes {
   readonly invitesApply: '/api/invites/apply';
   readonly invitesProgress: '/api/invites/progress';
   readonly invitesRedeem: '/api/invites/redeem';
+  readonly appRelease: '/api/app/release';
 }
 export const API_ROUTES: ApiRoutes;
 

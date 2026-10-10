@@ -22,6 +22,7 @@ import { useAuthStore } from '@/state/authStore';
 import { notifyAppReadyIfNative } from '@/services/ota/otaService';
 import { logAnalyticsEvent } from '@/services/firebase';
 import { ShareAppPromoHost } from '@/features/promo/ShareAppPromoHost';
+import { useAppUpdateStore } from '@/state/appUpdateStore';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
@@ -47,6 +48,7 @@ export function App() {
     if (isReady) {
       void notifyAppReadyIfNative();
       void logAnalyticsEvent('app_open');
+      void useAppUpdateStore.getState().bootstrap();
     }
   }, [isReady]);
 

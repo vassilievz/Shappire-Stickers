@@ -1,18 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Sparkles } from 'lucide-react';
 import { BottomSheet } from '@/shared/components/overlays';
 import { Button, Spinner } from '@/shared/components/primitives';
 import { DecoratedAvatar } from '@/shared/components/DecoratedAvatar';
+import { DecorationThumb } from '@/shared/components/DecorationThumb';
 import { useTranslation } from '@/i18n';
 import { useProfileStore } from '@/state/profileStore';
 import {
   fetchAvatarDecorationCatalog,
-  saveAvatarDecoration,
+  peekAvatarDecorationCatalog,
 } from '@/services/api/avatarDecorationApi';
 import type { AvatarDecorationCatalogItem } from '@shappire/contracts';
 import { showToast } from '@/state/toastStore';
-import { AppError } from '@/shared/errors';
 import { Link } from 'react-router-dom';
+import { preloadDecorationImage } from '@/services/avatarDecorations/decorationImageCache';
 
 export function AvatarDecorationSheet({
   open,
@@ -23,29 +24,42 @@ export function AvatarDecorationSheet({
 }) {
   const { t } = useTranslation();
   const profile = useProfileStore((s) => s.profile);
-  const hydrate = useProfileStore((s) => s.hydrate);
+  const equipAvatarDecoration = useProfileStore((s) => s.equipAvatarDecoration);
+  const decorationSaving = useProfileStore((s) => s.decorationSaving);
 
-  const [items, setItems] = useState<AvatarDecorationCatalogItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<AvatarDecorationCatalogItem[]>(() =>
+    peekAvatarDecorationCatalog()?.items ?? [],
+  );
+  const [catalogRefreshing, setCatalogRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const previewRequestRef = useRef(0);
 
   const activeDonor = Boolean(profile?.monthlyDonor?.active);
   const savedId = profile?.avatarDecorationId ?? profile?.avatarDecoration?.id ?? null;
-  const previewItem = useMemo(
-    () => items.find((item) => item.id === (previewId ?? savedId)) ?? null,
-    [items, previewId, savedId],
-  );
 
   useEffect(() => {
-    if (!open) return;
-    setLoading(true);
+    if (!open) {
+      setPreviewId(null);
+      return;
+    }
+    setPreviewId(savedId);
+
+    const cached = peekAvatarDecorationCatalog();
+    if (cached?.items?.length) {
+      setItems(cached.items);
+    }
+
+    setCatalogRefreshing(!cached?.items?.length);
     void fetchAvatarDecorationCatalog()
       .then((catalog) => setItems(catalog.items))
-      .catch(() => showToast(t('avatarDecorations.loadError'), 'error'))
-      .finally(() => setLoading(false));
-  }, [open, t]);
+      .catch(() => {
+        if (!peekAvatarDecorationCatalog()?.items?.length) {
+          showToast(t('avatarDecorations.loadError'), 'error');
+        }
+      })
+      .finally(() => setCatalogRefreshing(false));
+  }, [open, savedId, t]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -53,7 +67,26 @@ export function AvatarDecorationSheet({
     return items.filter((item) => item.label.toLowerCase().includes(q) || item.id.includes(q));
   }, [items, query]);
 
+  const selectedId = previewId ?? savedId;
+  const previewItem = useMemo(
+    () => items.find((item) => item.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+
   const avatarSrc = profile?.avatar?.url ?? profile?.photoURL ?? null;
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      setPreviewId(id);
+      const item = items.find((entry) => entry.id === id);
+      if (!item) return;
+      const requestId = ++previewRequestRef.current;
+      void preloadDecorationImage(item.url).then(() => {
+        if (previewRequestRef.current !== requestId) return;
+      });
+    },
+    [items],
+  );
 
   const handleSave = useCallback(async () => {
     const id = previewId ?? savedId;
@@ -62,27 +95,45 @@ export function AvatarDecorationSheet({
       showToast(t('avatarDecorations.premiumRequired'), 'info');
       return;
     }
-    setSaving(true);
-    try {
-      await saveAvatarDecoration(id);
-      await hydrate();
+    const item = items.find((entry) => entry.id === id);
+    if (!item) return;
+
+    const ok = await equipAvatarDecoration({
+      decorationId: id,
+      decoration: {
+        id: item.id,
+        url: item.url,
+        label: item.label,
+        overlay: item.overlay,
+      },
+    });
+
+    if (ok) {
       showToast(t('avatarDecorations.saved'), 'success');
       onClose();
-    } catch (error) {
-      const code = AppError.is(error) ? error.code : 'UNKNOWN';
-      if (code === 'MONTHLY_DONOR_REQUIRED') {
-        showToast(t('avatarDecorations.premiumRequired'), 'info');
-      } else {
-        showToast(t('avatarDecorations.saveError'), 'error');
-      }
-    } finally {
-      setSaving(false);
+      return;
     }
-  }, [activeDonor, hydrate, onClose, previewId, savedId, t]);
+
+    const err = useProfileStore.getState().saveError;
+    const code = err?.code ?? 'UNKNOWN';
+    if (code === 'MONTHLY_DONOR_REQUIRED') {
+      showToast(t('avatarDecorations.premiumRequired'), 'info');
+    } else {
+      showToast(t('avatarDecorations.saveError'), 'error');
+    }
+  }, [activeDonor, equipAvatarDecoration, items, onClose, previewId, savedId, t]);
 
   const previewDecoration = previewItem
-    ? { id: previewItem.id, url: previewItem.url, label: previewItem.label, overlay: previewItem.overlay }
+    ? {
+        id: previewItem.id,
+        url: previewItem.url,
+        label: previewItem.label,
+        overlay: previewItem.overlay,
+      }
     : profile?.avatarDecoration ?? null;
+
+  const isPreviewOnly = Boolean(previewId && previewId !== savedId);
+  const isEquipped = Boolean(selectedId && selectedId === savedId && !decorationSaving);
 
   return (
     <BottomSheet open={open} title={t('avatarDecorations.title')} onClose={onClose}>
@@ -90,14 +141,26 @@ export function AvatarDecorationSheet({
         <p className="text-[13px] text-ink-muted">{t('avatarDecorations.description')}</p>
 
         <div className="flex justify-center py-2">
-          <DecoratedAvatar src={avatarSrc} size="xl" decoration={previewDecoration} />
+          <DecoratedAvatar
+            src={avatarSrc}
+            size="xl"
+            decoration={previewDecoration}
+            decorationPriority
+          />
         </div>
-        {previewId && previewId !== savedId ? (
+        {decorationSaving ? (
+          <p className="text-center text-[12px] text-ink-muted">{t('avatarDecorations.saving')}</p>
+        ) : isPreviewOnly ? (
           <p className="text-center text-[12px] text-accent">{t('avatarDecorations.previewNote')}</p>
+        ) : isEquipped ? (
+          <p className="text-center text-[12px] text-ink-muted">{t('avatarDecorations.equippedNote')}</p>
         ) : null}
 
         <label className="relative block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted"
+            aria-hidden
+          />
           <input
             type="search"
             value={query}
@@ -107,35 +170,27 @@ export function AvatarDecorationSheet({
           />
         </label>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Spinner />
-          </div>
-        ) : (
-          <ul className="grid max-h-[40dvh] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-            {filtered.map((item) => {
-              const selected = (previewId ?? savedId) === item.id;
-              return (
+        <div className="scroll-fade-y relative max-h-[40dvh] min-h-[120px] overflow-y-auto overscroll-contain">
+          {catalogRefreshing && items.length === 0 ? (
+            <div className="flex justify-center py-8">
+              <Spinner />
+            </div>
+          ) : (
+            <ul className="grid grid-cols-3 gap-2 pb-1 sm:grid-cols-4">
+              {filtered.map((item) => (
                 <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewId(item.id)}
-                    className={`flex w-full flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors ${
-                      selected ? 'border-accent bg-accent/10' : 'border-line bg-surface hover:bg-surface-2'
-                    }`}
-                  >
-                    <DecoratedAvatar
-                      src={avatarSrc}
-                      size="sm"
-                      decoration={{ id: item.id, url: item.url, label: item.label, overlay: item.overlay }}
-                    />
-                    <span className="line-clamp-2 text-[10px] leading-tight text-ink-muted">{item.label}</span>
-                  </button>
+                  <DecorationThumb
+                    url={item.url}
+                    overlay={item.overlay}
+                    label={item.label}
+                    selected={selectedId === item.id}
+                    onSelect={() => handleSelect(item.id)}
+                  />
                 </li>
-              );
-            })}
-          </ul>
-        )}
+              ))}
+            </ul>
+          )}
+        </div>
 
         {!activeDonor ? (
           <div className="rounded-xl border border-line bg-surface-2/80 p-4 text-center">
@@ -147,7 +202,13 @@ export function AvatarDecorationSheet({
             </Link>
           </div>
         ) : (
-          <Button variant="primary" fullWidth loading={saving} onClick={() => void handleSave()}>
+          <Button
+            variant="primary"
+            fullWidth
+            loading={decorationSaving}
+            disabled={!selectedId || selectedId === savedId}
+            onClick={() => void handleSave()}
+          >
             {t('avatarDecorations.apply')}
           </Button>
         )}

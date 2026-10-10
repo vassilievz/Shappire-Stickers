@@ -124,6 +124,7 @@ export const API_ROUTES = Object.freeze({
   invitesApply: '/api/invites/apply',
   invitesProgress: '/api/invites/progress',
   invitesRedeem: '/api/invites/redeem',
+  appRelease: '/api/app/release',
 });
 
 /**

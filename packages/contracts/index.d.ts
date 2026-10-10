@@ -107,6 +107,18 @@ export interface ApiRoutes {
   readonly invitesApply: '/api/invites/apply';
   readonly invitesProgress: '/api/invites/progress';
   readonly invitesRedeem: '/api/invites/redeem';
+  readonly appRelease: '/api/app/release';
+}
+
+export interface AppReleaseAndroidInfo {
+  latestVersion: string;
+  minVersion: string;
+  playStoreUrl: string;
+  releaseNotes?: string | null;
+}
+
+export interface AppReleaseResponse {
+  android: AppReleaseAndroidInfo;
 }
 export const API_ROUTES: ApiRoutes;
 

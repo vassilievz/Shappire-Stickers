@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { House, Package, UserRound, Wrench, UsersRound } from 'lucide-react';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
+import { AppUpdateBanner } from '@/features/updates/AppUpdateBanner';
 
 const MAIN_NAV = [
   { to: '/', labelKey: 'nav.home' as const, icon: House, end: true },
@@ -20,6 +21,7 @@ export function AppShell() {
         className="flex min-h-0 flex-1 w-full pb-[calc(var(--shell-nav-height)+env(safe-area-inset-bottom,0px))]"
       >
         <div className="mx-auto w-full max-w-[768px] lg:max-w-[840px] px-4 pt-[calc(env(safe-area-inset-top,0px)+16px)] sm:px-6">
+          <AppUpdateBanner />
           <Outlet />
         </div>
       </main>

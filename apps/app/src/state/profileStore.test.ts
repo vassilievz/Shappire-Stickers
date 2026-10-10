@@ -6,6 +6,7 @@ import type { UserProfile } from '@/services/firebase/types';
 import { AppError } from '@/shared/errors';
 import { loadCachedProfile, saveCachedProfile } from '@/services/storage/profileRepository';
 import { loadProfile, saveProfile } from '@/services/profile/profileService';
+import { saveAvatarDecoration } from '@/services/api/avatarDecorationApi';
 
 vi.mock('@/services/firebase', () => ({
   observeAuthState: vi.fn(),
@@ -21,6 +22,9 @@ vi.mock('@/services/profile/profileService', () => ({
   loadProfile: vi.fn(),
   saveProfile: vi.fn(),
 }));
+vi.mock('@/services/api/avatarDecorationApi', () => ({
+  saveAvatarDecoration: vi.fn(),
+}));
 
 const cacheMocks = {
   loadCachedProfile: vi.mocked(loadCachedProfile),
@@ -29,6 +33,9 @@ const cacheMocks = {
 const profileMocks = {
   loadProfile: vi.mocked(loadProfile),
   saveProfile: vi.mocked(saveProfile),
+};
+const decorationMocks = {
+  saveAvatarDecoration: vi.mocked(saveAvatarDecoration),
 };
 
 const cachedProfile: UserProfile = {
@@ -77,6 +84,7 @@ beforeEach(() => {
   });
   profileMocks.loadProfile.mockReset();
   profileMocks.saveProfile.mockReset();
+  decorationMocks.saveAvatarDecoration.mockReset();
   cacheMocks.loadCachedProfile.mockReset().mockResolvedValue(null);
   cacheMocks.saveCachedProfile.mockReset().mockResolvedValue(undefined);
 });
@@ -99,10 +107,13 @@ describe('useProfileStore — hydrate (offline-first)', () => {
     });
     expect(useProfileStore.getState().isStale).toBe(true);
 
-    resolveRemote!(remoteProfile);
     await hydrating;
+    expect(useProfileStore.getState().profile?.displayName).toBe('Gabriel (cache)');
 
-    expect(useProfileStore.getState().profile?.displayName).toBe('Gabriel (online)');
+    resolveRemote!(remoteProfile);
+    await vi.waitFor(() => {
+      expect(useProfileStore.getState().profile?.displayName).toBe('Gabriel (online)');
+    });
     expect(useProfileStore.getState().isStale).toBe(false);
     expect(useProfileStore.getState().status).toBe('ready');
   });
@@ -235,5 +246,32 @@ describe('useProfileStore — save', () => {
 
     expect(await useProfileStore.getState().save(draft)).toBe(false);
     expect(profileMocks.saveProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe('useProfileStore — equipAvatarDecoration', () => {
+  it('aplica otimista e reconcilia com a API', async () => {
+    signIn();
+    useProfileStore.setState({ profile: cachedProfile, status: 'ready' });
+    const remote: UserProfile = {
+      ...cachedProfile,
+      avatarDecorationId: 'dec-1',
+      avatarDecoration: {
+        id: 'dec-1',
+        url: 'https://cdn.example/dec.png',
+        label: 'Test',
+        overlay: { scale: 1.18, offsetX: 0, offsetY: 0, fit: 'contain' },
+      },
+    };
+    decorationMocks.saveAvatarDecoration.mockResolvedValue(remote);
+
+    const ok = await useProfileStore.getState().equipAvatarDecoration({
+      decorationId: 'dec-1',
+      decoration: remote.avatarDecoration!,
+    });
+
+    expect(ok).toBe(true);
+    expect(useProfileStore.getState().profile?.avatarDecorationId).toBe('dec-1');
+    expect(decorationMocks.saveAvatarDecoration).toHaveBeenCalledWith('dec-1');
   });
 });

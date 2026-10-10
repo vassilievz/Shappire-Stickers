@@ -3,6 +3,8 @@ import { useAuthStore } from './authStore';
 import { useLibraryStore } from './libraryStore';
 import { deriveProfileStats, type ProfileStats } from '@/domain/profile';
 import { loadProfile, saveProfile, type ProfileDraft } from '@/services/profile/profileService';
+import { saveAvatarDecoration } from '@/services/api/avatarDecorationApi';
+import type { ActiveAvatarDecoration } from '@shappire/contracts';
 import type { UserProfile } from '@/services/firebase/types';
 import { loadCachedProfile, saveCachedProfile } from '@/services/storage/profileRepository';
 import { toAppError, type AppError } from '@/shared/errors';
@@ -18,16 +20,23 @@ interface ProfileState {
   /** true quando a exibição veio do cache e a atualização online ainda não respondeu */
   isStale: boolean;
   isSaving: boolean;
+  decorationSaving: boolean;
   saveError: AppError | null;
   error: string | null;
 
   hydrate: () => Promise<void>;
   save: (draft: ProfileDraft) => Promise<boolean>;
+  /** Atualização otimista + reconciliação ao equipar decoração de avatar. */
+  equipAvatarDecoration: (input: {
+    decorationId: string;
+    decoration: ActiveAvatarDecoration;
+  }) => Promise<boolean>;
   reset: () => void;
 }
 
 let activeUid: string | null = null;
 let refreshInFlight: Promise<void> | null = null;
+let decorationSaveGeneration = 0;
 
 function publishProfile(profile: UserProfile, stale: boolean): void {
   useProfileStore.setState({ profile, status: 'ready', isStale: stale, error: null });
@@ -75,6 +84,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   status: 'idle',
   isStale: false,
   isSaving: false,
+  decorationSaving: false,
   saveError: null,
   error: null,
 
@@ -93,10 +103,12 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     activeUid = uid;
 
     set({ status: 'loading', error: null });
+    let hadCachedProfile = false;
     try {
       const cached = await loadCachedProfile(uid);
       if (useAuthStore.getState().user?.uid !== uid) return;
       if (cached) {
+        hadCachedProfile = true;
         publishProfile(cached, true);
       }
     } catch (error) {
@@ -108,7 +120,49 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         refreshInFlight = null;
       });
     }
-    await refreshInFlight;
+    // Com cache local, não bloqueia a UI na rede — atualiza em background.
+    if (!hadCachedProfile) {
+      await refreshInFlight;
+    }
+  },
+
+  equipAvatarDecoration: async ({ decorationId, decoration }) => {
+    const current = get().profile;
+    if (!current || get().decorationSaving) return false;
+
+    const generation = ++decorationSaveGeneration;
+    const snapshot = current;
+    const optimistic: UserProfile = {
+      ...current,
+      avatarDecorationId: decorationId,
+      avatarDecoration: decoration,
+    };
+
+    publishProfile(optimistic, false);
+    void saveCachedProfile(optimistic).catch((error) =>
+      logger.debug('Falha ao gravar cache otimista de decoração:', error),
+    );
+    set({ decorationSaving: true, saveError: null });
+
+    try {
+      const remote = await saveAvatarDecoration(decorationId);
+      if (generation !== decorationSaveGeneration) {
+        return true;
+      }
+      publishProfile(remote, false);
+      void saveCachedProfile(remote).catch((error) =>
+        logger.debug('Falha ao gravar cache de decoração:', error),
+      );
+      set({ decorationSaving: false });
+      return true;
+    } catch (error) {
+      if (generation === decorationSaveGeneration) {
+        publishProfile(snapshot, get().isStale);
+        void saveCachedProfile(snapshot).catch(() => {});
+        set({ decorationSaving: false, saveError: toAppError(error) });
+      }
+      return false;
+    }
   },
 
   save: async (draft) => {
@@ -139,9 +193,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       status: 'idle',
       isStale: false,
       isSaving: false,
+      decorationSaving: false,
       saveError: null,
       error: null,
     });
+    decorationSaveGeneration = 0;
   },
 }));
 

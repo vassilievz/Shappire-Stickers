@@ -15,6 +15,7 @@ import { avatarDecorationsRouter } from './routes/avatarDecorations.js';
 import { monthlyDonorRouter } from './routes/monthlyDonor.js';
 import { invitesRouter } from './routes/invites.js';
 import { avatarDecorationProfileRouter } from './routes/avatarDecorationProfile.js';
+import { appReleaseRouter } from './routes/appRelease.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -40,6 +41,7 @@ export function createApp() {
   app.use(monthlyDonorRouter);
   app.use(invitesRouter);
   app.use(avatarDecorationProfileRouter);
+  app.use(appReleaseRouter);
   app.use((_req, res) => {
     res.status(404).json({ error: 'NOT_FOUND', message: 'Rota não encontrada.' });
   });
