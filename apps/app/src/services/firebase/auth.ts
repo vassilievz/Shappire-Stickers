@@ -64,6 +64,32 @@ function handleAuthError(error: unknown): Error {
 }
 
 /**
+ * No Android/iOS, o plugin nativo pode manter sessão enquanto o SDK web ainda
+ * não tem `currentUser` — isso quebra `getIdToken()` nas chamadas à API.
+ */
+export async function syncNativeAuthToWeb(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return;
+
+  try {
+    const current = await FirebaseAuthentication.getCurrentUser();
+    if (!current.user) return;
+
+    const tokenResult = await FirebaseAuthentication.getIdToken({ forceRefresh: false });
+    const idToken = tokenResult.token;
+    if (!idToken) return;
+
+    const credential = GoogleAuthProvider.credential(idToken);
+    await signInWithCredential(auth, credential);
+    authLog('sessão nativa sincronizada com Firebase web');
+  } catch (err) {
+    logger.debug('Não foi possível sincronizar auth nativa → web:', err);
+  }
+}
+
+/**
  * Realiza o login com Google.
  * - No Android/iOS: utiliza a autenticação nativa do Capacitor (Play Services / Credential Manager)
  *   e sincroniza as credenciais com o SDK Web do Firebase.

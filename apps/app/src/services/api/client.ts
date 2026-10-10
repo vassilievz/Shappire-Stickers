@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { getFirebaseAuth } from '@/services/firebase/config';
+import { syncNativeAuthToWeb } from '@/services/firebase/auth';
 import { AppError, type AppErrorCode } from '@/shared/errors';
 import { createLogger } from '@/services/logging/logger';
 
@@ -44,6 +45,10 @@ export function getApiBaseUrl(): string {
 }
 
 export async function getAuthToken(): Promise<string> {
+  if (Capacitor.isNativePlatform()) {
+    await syncNativeAuthToWeb();
+  }
+
   let token: string | null = null;
   const webUser = getFirebaseAuth().currentUser;
 

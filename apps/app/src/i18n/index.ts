@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useSettingsStore } from '@/state/settingsStore';
 import type { LanguagePreference } from '@/services/storage/settingsRepository';
 import { TRANSLATIONS } from './translations';
@@ -52,9 +53,10 @@ export function useTranslation() {
   const language = useSettingsStore((state) => state.settings.language);
   const update = useSettingsStore((state) => state.update);
 
-  const translate = (path: string, params?: Record<string, string | number>): string => {
-    return t(path, params, language);
-  };
+  const translate = useCallback(
+    (path: string, params?: Record<string, string | number>): string => t(path, params, language),
+    [language],
+  );
 
   const setLanguage = async (newLang: LanguagePreference) => {
     await update({ language: newLang });

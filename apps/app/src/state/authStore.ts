@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   observeAuthState,
+  syncNativeAuthToWeb,
   signInWithGoogle as firebaseSignInWithGoogle,
   signOut as firebaseSignOut,
   logAnalyticsEvent,
@@ -63,6 +64,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     initialized = true;
 
     logger.debug('Inicializando listener de autenticação global...');
+
+    void syncNativeAuthToWeb();
 
     const unsubscribe = observeAuthState((user) => {
       authLog('onAuthStateChanged disparou', user ? `uid=${user.uid}` : 'sem usuário');

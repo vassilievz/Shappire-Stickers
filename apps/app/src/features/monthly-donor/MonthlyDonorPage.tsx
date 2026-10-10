@@ -23,11 +23,12 @@ import { showToast } from '@/state/toastStore';
 import { writeClipboardText } from '@/services/native/clipboard';
 import { shareText } from '@/services/native/shareService';
 import { AvatarDecorationSheet } from '@/features/profile/AvatarDecorationSheet';
-import { friendlyMessage } from '@/shared/errors';
+import { AppError, friendlyMessage } from '@/shared/errors';
 
 export function MonthlyDonorPage() {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authLoading = useAuthStore((s) => s.isLoading);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const isSigningIn = useAuthStore((s) => s.isSigningIn);
   const profile = useProfileStore((s) => s.profile);
@@ -44,15 +45,18 @@ export function MonthlyDonorPage() {
   const [applyingInvite, setApplyingInvite] = useState(false);
 
   const loadToastShown = useRef(false);
+  const loadInFlight = useRef(false);
 
   const load = useCallback(async () => {
+    if (authLoading) return;
     if (!isAuthenticated) {
       setLoading(false);
       return;
     }
+    if (loadInFlight.current) return;
+    loadInFlight.current = true;
     setLoading(true);
     setLoadError(null);
-    loadToastShown.current = false;
     const [donorResult, inviteResult] = await Promise.allSettled([
       fetchMonthlyDonorStatus(),
       fetchInviteProgress(),
@@ -61,11 +65,15 @@ export function MonthlyDonorPage() {
     if (donorResult.status === 'fulfilled') {
       setStatus(donorResult.value.monthlyDonor);
     } else {
+      const appErr = AppError.is(donorResult.reason) ? donorResult.reason : null;
       const message = friendlyMessage(donorResult.reason);
       setLoadError(message);
       if (!loadToastShown.current) {
         loadToastShown.current = true;
         showToast(message || t('monthlyDonor.loadError'), 'error');
+      }
+      if (appErr?.code === 'UNAUTHORIZED') {
+        setStatus({ active: false, expiresAt: null, daysRemaining: 0 });
       }
     }
 
@@ -80,7 +88,8 @@ export function MonthlyDonorPage() {
     }
 
     setLoading(false);
-  }, [isAuthenticated, t]);
+    loadInFlight.current = false;
+  }, [authLoading, isAuthenticated, t]);
 
   useEffect(() => {
     void load();
@@ -137,7 +146,7 @@ export function MonthlyDonorPage() {
     );
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-[40dvh] items-center justify-center">
         <Spinner />
