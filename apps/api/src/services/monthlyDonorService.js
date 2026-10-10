@@ -1,5 +1,6 @@
 import { MONTHLY_DONOR_PERIOD_DAYS } from '@shappire/contracts';
 import { User } from '../models/User.js';
+import { ensureUserRecord } from './userIdentityService.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -32,8 +33,11 @@ export function isMonthlyDonorActive(doc, now = new Date()) {
  * Concede ou prolonga 30 dias a partir da expiração atual (stacking).
  * Retorna o documento atualizado.
  */
-export async function grantMonthlyDonorPeriod(firebaseUid, { now = new Date() } = {}) {
-  const doc = await User.findOne({ firebaseUid });
+export async function grantMonthlyDonorPeriod(firebaseUid, { now = new Date(), email = null } = {}) {
+  let doc = await User.findOne({ firebaseUid });
+  if (!doc) {
+    doc = await ensureUserRecord(firebaseUid, email);
+  }
   if (!doc) return null;
 
   const currentExpiry = doc.monthlyDonorExpiresAt instanceof Date

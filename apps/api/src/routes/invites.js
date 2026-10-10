@@ -7,12 +7,12 @@ import { ApiError } from '../utils/apiError.js';
 export const invitesRouter = Router();
 
 invitesRouter.get('/api/invites/me', requireAuth, profileReadLimiter, async (req, res) => {
-  const result = await inviteService.getInviteMe(req.user.uid);
+  const result = await inviteService.getInviteMe(req.user.uid, req.user.email);
   res.json(result);
 });
 
 invitesRouter.get('/api/invites/progress', requireAuth, profileReadLimiter, async (req, res) => {
-  const result = await inviteService.getInviteProgress(req.user.uid);
+  const result = await inviteService.getInviteProgress(req.user.uid, req.user.email);
   res.json(result);
 });
 
@@ -21,11 +21,18 @@ invitesRouter.post('/api/invites/apply', requireAuth, profileWriteLimiter, async
   if (!code || typeof code !== 'string') {
     throw new ApiError(400, 'VALIDATION_ERROR', 'Campo "code" é obrigatório.');
   }
-  const result = await inviteService.applyInviteCode({ uid: req.user.uid, code });
+  const result = await inviteService.applyInviteCode({
+    uid: req.user.uid,
+    code,
+    email: req.user.email,
+  });
   res.json(result);
 });
 
 invitesRouter.post('/api/invites/redeem', requireAuth, profileWriteLimiter, async (req, res) => {
-  const result = await inviteService.redeemInviteReward({ uid: req.user.uid });
+  const result = await inviteService.redeemInviteReward({
+    uid: req.user.uid,
+    email: req.user.email,
+  });
   res.json(result);
 });

@@ -10,6 +10,7 @@ import {
   Info,
   LogIn,
   LogOut,
+  Copy,
   AtSign,
   RefreshCw,
   Sticker,
@@ -38,6 +39,8 @@ import { showToast } from '@/state/toastStore';
 import { friendlyMessage } from '@/shared/errors';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
+import { useProfileStore } from '@/state/profileStore';
+import { writeClipboardText } from '@/services/native/clipboard';
 import type { LanguagePreference, ThemePreference } from '@/services/storage/settingsRepository';
 import { useTranslation } from '@/i18n';
 import { useSocialPreferencesStore } from '@/state/socialPreferencesStore';
@@ -130,6 +133,8 @@ export function SettingsPage() {
 
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
+  const storeProfile = useProfileStore((state) => state.profile);
+  const supportAccountId = storeProfile?.publicId ?? profile?.publicId ?? user?.uid ?? '';
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isSigningIn = useAuthStore((state) => state.isSigningIn);
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
@@ -384,6 +389,29 @@ export function SettingsPage() {
                 </span>
               </div>
             </div>
+
+            {isAuthenticated && supportAccountId ? (
+              <button
+                type="button"
+                className="flex min-h-[44px] w-full items-center gap-3 rounded-[14px] border border-line bg-surface-2/60 px-3 py-2.5 text-left"
+                onClick={() =>
+                  void writeClipboardText(supportAccountId).then(() =>
+                    showToast(t('settings.accountIdCopied'), 'success'),
+                  )
+                }
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-ink-muted">
+                  <Copy className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                    {t('settings.accountIdLabel')}
+                  </span>
+                  <span className="block truncate font-mono text-[12px] text-ink">{supportAccountId}</span>
+                  <span className="block text-[11px] text-ink-muted">{t('settings.accountIdHint')}</span>
+                </span>
+              </button>
+            ) : null}
 
             {isAuthenticated ? (
               <div className="grid grid-cols-2 gap-2">

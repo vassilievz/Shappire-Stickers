@@ -1,6 +1,19 @@
 import crypto from 'node:crypto';
-import { INVITE_CODE_LENGTH } from '@shappire/contracts';
+import { INVITE_CODE_LENGTH, MAX_DISPLAY_NAME_LENGTH } from '@shappire/contracts';
 import { User } from '../models/User.js';
+import { ApiError } from '../utils/apiError.js';
+
+function defaultDisplayNameFromEmail(email) {
+  const local = typeof email === 'string' ? email.split('@')[0]?.trim() : '';
+  const base = local || 'Usuário';
+  return base.slice(0, MAX_DISPLAY_NAME_LENGTH);
+}
+
+function resolveAccountEmail(uid, email, existingDoc) {
+  if (typeof email === 'string' && email.trim()) return email.trim();
+  if (existingDoc?.email) return existingDoc.email;
+  return `${uid}@account.shappire.local`;
+}
 
 const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -21,6 +34,32 @@ function randomInviteCode() {
  * Garante publicId e inviteCode únicos no documento do usuário.
  * Idempotente — não altera valores já existentes.
  */
+/**
+ * Garante documento Mongo para o uid autenticado (ex.: login Google sem PATCH de perfil).
+ * Idempotente; preenche publicId/inviteCode via ensureUserIdentity.
+ */
+export async function ensureUserRecord(uid, email = null) {
+  if (!uid) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Identificador de usuário ausente.');
+  }
+  let doc = await User.findOne({ firebaseUid: uid });
+  const resolvedEmail = resolveAccountEmail(uid, email, doc);
+
+  if (!doc) {
+    doc = new User({
+      firebaseUid: uid,
+      email: resolvedEmail,
+      displayName: defaultDisplayNameFromEmail(resolvedEmail),
+    });
+    await doc.save();
+  } else if (typeof email === 'string' && email.trim() && doc.email !== email.trim()) {
+    doc.email = email.trim();
+    await doc.save();
+  }
+
+  return ensureUserIdentity(doc);
+}
+
 export async function ensureUserIdentity(doc) {
   if (!doc) return doc;
   let changed = false;

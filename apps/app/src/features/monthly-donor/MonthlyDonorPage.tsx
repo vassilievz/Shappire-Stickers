@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, Gift, Users, Copy, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button, Card, EmptyState, Spinner } from '@/shared/components/primitives';
@@ -23,6 +23,7 @@ import { showToast } from '@/state/toastStore';
 import { writeClipboardText } from '@/services/native/clipboard';
 import { shareText } from '@/services/native/shareService';
 import { AvatarDecorationSheet } from '@/features/profile/AvatarDecorationSheet';
+import { friendlyMessage } from '@/shared/errors';
 
 export function MonthlyDonorPage() {
   const { t } = useTranslation();
@@ -30,8 +31,10 @@ export function MonthlyDonorPage() {
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const isSigningIn = useAuthStore((s) => s.isSigningIn);
   const profile = useProfileStore((s) => s.profile);
+  const authUser = useAuthStore((s) => s.user);
 
   const [status, setStatus] = useState<MonthlyDonorStatus | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [inviteProgress, setInviteProgress] = useState<InviteProgressResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCharge, setActiveCharge] = useState<MonthlyDonorChargeCreateResponse | null>(null);
@@ -40,24 +43,43 @@ export function MonthlyDonorPage() {
   const [inviteInput, setInviteInput] = useState('');
   const [applyingInvite, setApplyingInvite] = useState(false);
 
+  const loadToastShown = useRef(false);
+
   const load = useCallback(async () => {
     if (!isAuthenticated) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    try {
-      const [donorRes, inviteRes] = await Promise.all([
-        fetchMonthlyDonorStatus(),
-        fetchInviteProgress(),
-      ]);
-      setStatus(donorRes.monthlyDonor);
-      setInviteProgress(inviteRes);
-    } catch {
-      showToast(t('monthlyDonor.loadError'), 'error');
-    } finally {
-      setLoading(false);
+    setLoadError(null);
+    loadToastShown.current = false;
+    const [donorResult, inviteResult] = await Promise.allSettled([
+      fetchMonthlyDonorStatus(),
+      fetchInviteProgress(),
+    ]);
+
+    if (donorResult.status === 'fulfilled') {
+      setStatus(donorResult.value.monthlyDonor);
+    } else {
+      const message = friendlyMessage(donorResult.reason);
+      setLoadError(message);
+      if (!loadToastShown.current) {
+        loadToastShown.current = true;
+        showToast(message || t('monthlyDonor.loadError'), 'error');
+      }
     }
+
+    if (inviteResult.status === 'fulfilled') {
+      setInviteProgress(inviteResult.value);
+    } else {
+      setInviteProgress(null);
+    }
+
+    if (donorResult.status === 'fulfilled' || inviteResult.status === 'fulfilled') {
+      void useProfileStore.getState().hydrate();
+    }
+
+    setLoading(false);
   }, [isAuthenticated, t]);
 
   useEffect(() => {
@@ -68,10 +90,12 @@ export function MonthlyDonorPage() {
     try {
       const charge = await createMonthlyDonorCharge();
       setActiveCharge(charge);
-    } catch {
-      showToast(t('monthlyDonor.createError'), 'error');
+    } catch (error) {
+      showToast(friendlyMessage(error) || t('monthlyDonor.createError'), 'error');
     }
   };
+
+  const supportAccountId = profile?.publicId ?? authUser?.uid ?? '';
 
   const handleShareInvite = async () => {
     if (!inviteProgress?.inviteCode) return;
@@ -172,6 +196,9 @@ export function MonthlyDonorPage() {
         ) : (
           <p className="text-sm text-ink-muted">{t('monthlyDonor.expired')}</p>
         )}
+        {loadError ? (
+          <p className="text-[13px] text-red-500/90" role="alert">{loadError}</p>
+        ) : null}
         <p className="text-[13px] leading-relaxed text-ink-muted">{t('monthlyDonor.supportReason')}</p>
         <Button variant="primary" fullWidth onClick={() => void startPurchase()}>
           {active ? t('monthlyDonor.renewCta', { amount: MONTHLY_DONOR_AMOUNT_BRL }) : t('monthlyDonor.unlockCta', { amount: MONTHLY_DONOR_AMOUNT_BRL })}
@@ -244,6 +271,22 @@ export function MonthlyDonorPage() {
             </div>
           ) : null}
         </Card>
+      ) : null}
+
+      {supportAccountId ? (
+        <button
+          type="button"
+          className="flex min-h-[44px] w-full flex-col items-center gap-1 rounded-[var(--radius-card)] border border-line bg-surface-2/50 px-4 py-3 text-center"
+          onClick={() =>
+            void writeClipboardText(supportAccountId).then(() => showToast(t('settings.accountIdCopied'), 'success'))
+          }
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+            {t('settings.accountIdLabel')}
+          </span>
+          <span className="max-w-full truncate font-mono text-[12px] text-ink">{supportAccountId}</span>
+          <span className="text-[11px] text-ink-muted">{t('settings.accountIdHint')}</span>
+        </button>
       ) : null}
 
       <p className="text-center text-[12px] text-ink-muted">

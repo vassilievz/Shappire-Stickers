@@ -13,7 +13,10 @@ monthlyDonorRouter.get('/api/monthly-donor/status', requireAuth, profileReadLimi
 });
 
 monthlyDonorRouter.post('/api/monthly-donor/charges', requireAuth, donationCreateLimiter, async (req, res) => {
-  const result = await monthlyDonorPaymentService.createMonthlyDonorCharge({ uid: req.user.uid });
+  const result = await monthlyDonorPaymentService.createMonthlyDonorCharge({
+    uid: req.user.uid,
+    email: req.user.email,
+  });
   res.status(201).json(result);
 });
 

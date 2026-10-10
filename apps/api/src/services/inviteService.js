@@ -10,17 +10,13 @@ import { ReferralReward } from '../models/ReferralReward.js';
 import { ApiError } from '../utils/apiError.js';
 import * as monthlyDonorService from './monthlyDonorService.js';
 import {
-  ensureUserIdentity,
+  ensureUserRecord,
   findUserByInviteCode,
   normalizeInviteCodeInput,
 } from './userIdentityService.js';
 
-export async function getInviteMe(uid) {
-  let doc = await User.findOne({ firebaseUid: uid });
-  if (!doc) {
-    throw new ApiError(404, 'PROFILE_NOT_FOUND', 'Perfil não encontrado.');
-  }
-  doc = await ensureUserIdentity(doc);
+export async function getInviteMe(uid, email = null) {
+  const doc = await ensureUserRecord(uid, email);
   return {
     inviteCode: doc.inviteCode,
     publicId: doc.publicId,
@@ -50,26 +46,18 @@ export function buildInviteProgress(doc) {
   };
 }
 
-export async function getInviteProgress(uid) {
-  const doc = await User.findOne({ firebaseUid: uid });
-  if (!doc) {
-    throw new ApiError(404, 'PROFILE_NOT_FOUND', 'Perfil não encontrado.');
-  }
-  await ensureUserIdentity(doc);
+export async function getInviteProgress(uid, email = null) {
+  const doc = await ensureUserRecord(uid, email);
   return buildInviteProgress(doc);
 }
 
-export async function applyInviteCode({ uid, code }) {
+export async function applyInviteCode({ uid, code, email = null }) {
   const normalized = normalizeInviteCodeInput(code);
   if (!normalized) {
     throw new ApiError(400, 'INVITE_INVALID', 'Código de convite inválido.');
   }
 
-  const invitee = await User.findOne({ firebaseUid: uid });
-  if (!invitee) {
-    throw new ApiError(404, 'PROFILE_NOT_FOUND', 'Perfil não encontrado.');
-  }
-  await ensureUserIdentity(invitee);
+  const invitee = await ensureUserRecord(uid, email);
 
   if (invitee.referredByUid) {
     throw new ApiError(409, 'INVITE_ALREADY_APPLIED', 'Esta conta já utilizou um código de convite.');
@@ -117,11 +105,8 @@ export async function applyInviteCode({ uid, code }) {
   return { applied: true, monthlyDonor };
 }
 
-export async function redeemInviteReward({ uid }) {
-  const doc = await User.findOne({ firebaseUid: uid });
-  if (!doc) {
-    throw new ApiError(404, 'PROFILE_NOT_FOUND', 'Perfil não encontrado.');
-  }
+export async function redeemInviteReward({ uid, email = null }) {
+  const doc = await ensureUserRecord(uid, email);
 
   const progress = buildInviteProgress(doc);
   if (progress.rewardsAvailable < 1) {

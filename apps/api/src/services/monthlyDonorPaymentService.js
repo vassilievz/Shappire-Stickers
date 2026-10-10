@@ -9,6 +9,7 @@ import {
   MONTHLY_DONOR_AMOUNT_BRL,
 } from '@shappire/contracts';
 import { env } from '../config/env.js';
+import { ensureUserRecord } from './userIdentityService.js';
 
 const STATUS_CHECK_COOLDOWN_MS = 4000;
 
@@ -18,7 +19,9 @@ function betaBadgeEnabled() {
   return raw === 'true' || raw === '1';
 }
 
-export async function createMonthlyDonorCharge({ uid }) {
+export async function createMonthlyDonorCharge({ uid, email = null }) {
+  await ensureUserRecord(uid, email);
+
   const chargeId = crypto.randomUUID();
   const amount = MONTHLY_DONOR_AMOUNT_BRL;
   const description = 'Doador Mensal Shappire Stickers (30 dias)';
@@ -57,7 +60,7 @@ async function applyPaidBenefits(charge, { email = null } = {}) {
   if (charge.benefitGranted) {
     return;
   }
-  await monthlyDonorService.grantMonthlyDonorPeriod(charge.firebaseUid);
+  await monthlyDonorService.grantMonthlyDonorPeriod(charge.firebaseUid, { email });
   charge.benefitGranted = true;
 
   if (betaBadgeEnabled()) {
