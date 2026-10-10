@@ -121,6 +121,14 @@ export async function getPixStatus(idOrExternalRef) {
     }
 
     const statusData = data.data;
+    if (!statusData || typeof statusData.status !== 'string') {
+      throw new ApiError(
+        502,
+        'PAYMENT_GATEWAY_ERROR',
+        'Resposta inválida da GoatPay: status ausente.',
+      );
+    }
+
     return {
       id: statusData.id,
       status: statusData.status, // PENDING, PROCESSING, COMPLETED, FAILED, CANCELED, REVERSED

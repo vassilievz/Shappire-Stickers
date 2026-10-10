@@ -126,13 +126,21 @@ describe('donationService', () => {
         completedAt: new Date('2026-10-10T00:05:00Z'),
       });
 
-      const res = await checkDonationStatus({ uid: 'u1', donationId: 'don-1' });
+      userService.grantBadge.mockResolvedValue({ badges: ['initial_supporter'] });
+
+      const res = await checkDonationStatus({
+        uid: 'u1',
+        donationId: 'don-1',
+        email: 'user@example.com',
+      });
 
       expect(res.status).toBe('PAID');
       expect(res.badgeGranted).toBe(true);
       expect(mockDoc.status).toBe('PAID');
       expect(mockDoc.badgeGranted).toBe(true);
-      expect(userService.grantBadge).toHaveBeenCalledWith('u1', 'initial_supporter');
+      expect(userService.grantBadge).toHaveBeenCalledWith('u1', 'initial_supporter', {
+        email: 'user@example.com',
+      });
       expect(mockDoc.save).toHaveBeenCalled();
     });
 

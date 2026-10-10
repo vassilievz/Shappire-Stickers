@@ -13,7 +13,12 @@ const STATUS_CHECK_COOLDOWN_MS = 4000; // 4 segundos de cooldown para evitar spa
 
 export async function createDonation({ uid, amount }) {
   const parsedAmount = Number(amount);
-  if (!Number.isFinite(parsedAmount) || parsedAmount < DONATION_MIN_AMOUNT || parsedAmount > DONATION_MAX_AMOUNT) {
+  if (
+    !Number.isFinite(parsedAmount) ||
+    !Number.isInteger(parsedAmount) ||
+    parsedAmount < DONATION_MIN_AMOUNT ||
+    parsedAmount > DONATION_MAX_AMOUNT
+  ) {
     throw new ApiError(
       400,
       'INVALID_AMOUNT',
@@ -41,7 +46,6 @@ export async function createDonation({ uid, amount }) {
     status: 'PENDING',
     rawStatus: pixResult.status,
     expiresAt: pixResult.expiresAt,
-    lastCheckedAt: new Date(),
   });
 
   await donation.save();
@@ -55,7 +59,7 @@ export async function createDonation({ uid, amount }) {
   };
 }
 
-export async function checkDonationStatus({ uid, donationId }) {
+export async function checkDonationStatus({ uid, donationId, email = null }) {
   const donation = await Donation.findOne({ donationId, firebaseUid: uid });
   if (!donation) {
     throw new ApiError(404, 'DONATION_NOT_FOUND', 'Doação não encontrada.');
@@ -94,9 +98,8 @@ export async function checkDonationStatus({ uid, donationId }) {
       donation.status = 'PAID';
       donation.paidAt = goatStatus.completedAt || new Date();
 
-      // Concessão permanente e idempotente da insígnia no MongoDB
-      await userService.grantBadge(uid, INITIAL_SUPPORTER_BADGE);
-      donation.badgeGranted = true;
+      const profile = await userService.grantBadge(uid, INITIAL_SUPPORTER_BADGE, { email });
+      donation.badgeGranted = Boolean(profile?.badges?.includes(INITIAL_SUPPORTER_BADGE));
     } else if (goatStatus.status === 'CANCELED') {
       donation.status = 'EXPIRED';
     } else if (goatStatus.status === 'FAILED') {

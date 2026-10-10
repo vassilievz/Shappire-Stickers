@@ -124,7 +124,11 @@ export function PixCheckoutView({ donation, onCancel, onSuccess }: PixCheckoutVi
           />
         </div>
 
-        <div className="mt-5 flex items-center gap-2 text-[13px] font-medium text-ink-muted">
+        <div
+          className="mt-5 flex items-center gap-2 text-[13px] font-medium text-ink-muted"
+          role="status"
+          aria-live="polite"
+        >
           <Loader2 className="size-4 animate-spin text-accent" aria-hidden />
           <span>
             {isChecking ? t('donations.checkingPayment') : t('donations.waitingPayment')}

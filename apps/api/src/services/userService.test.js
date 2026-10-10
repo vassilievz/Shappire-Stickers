@@ -205,9 +205,28 @@ describe('grantBadge', () => {
     expect(profile.badges).toContain('initial_supporter');
   });
 
-  it('retorna null se usuário não existir', async () => {
+  it('retorna null se usuário não existir e email não for informado', async () => {
     findOneAndUpdate.mockResolvedValue(null);
     expect(await grantBadge('inexistente', 'initial_supporter')).toBeNull();
+  });
+
+  it('faz upsert do usuário quando email é informado', async () => {
+    const doc = existingDoc({ badges: ['initial_supporter'] });
+    findOneAndUpdate.mockResolvedValue(doc);
+
+    await grantBadge('uid-novo', 'initial_supporter', { email: 'novo@example.com' });
+
+    expect(findOneAndUpdate).toHaveBeenCalledWith(
+      { firebaseUid: 'uid-novo' },
+      expect.objectContaining({
+        $addToSet: { badges: 'initial_supporter' },
+        $setOnInsert: expect.objectContaining({
+          firebaseUid: 'uid-novo',
+          email: 'novo@example.com',
+        }),
+      }),
+      expect.objectContaining({ upsert: true, new: true }),
+    );
   });
 });
 

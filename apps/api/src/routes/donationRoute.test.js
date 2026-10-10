@@ -143,6 +143,7 @@ describe('Rotas de Doação', () => {
       expect(donationService.checkDonationStatus).toHaveBeenCalledWith({
         uid,
         donationId: 'don-123',
+        email: expect.any(String),
       });
     });
   });

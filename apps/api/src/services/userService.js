@@ -1,5 +1,12 @@
+import { MAX_DISPLAY_NAME_LENGTH } from '@shappire/contracts';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/apiError.js';
+
+function defaultDisplayNameFromEmail(email) {
+  const local = typeof email === 'string' ? email.split('@')[0]?.trim() : '';
+  const base = local || 'Usuário';
+  return base.slice(0, MAX_DISPLAY_NAME_LENGTH);
+}
 
 /** Converte o documento Mongo para o JSON de perfil consumido pelo app. */
 export function toProfileJson(doc) {
@@ -77,8 +84,27 @@ export async function setImage(uid, slot, meta) {
 
 /**
  * Concede uma insígnia ao usuário de forma permanente e idempotente ($addToSet).
+ * Com `email`, cria o documento mínimo do usuário se ainda não existir (ex.: apoio antes do PATCH de perfil).
  */
-export async function grantBadge(uid, badgeName) {
+export async function grantBadge(uid, badgeName, options = {}) {
+  const { email } = options;
+
+  if (email) {
+    const doc = await User.findOneAndUpdate(
+      { firebaseUid: uid },
+      {
+        $addToSet: { badges: badgeName },
+        $setOnInsert: {
+          firebaseUid: uid,
+          email,
+          displayName: defaultDisplayNameFromEmail(email),
+        },
+      },
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
+    );
+    return doc ? toProfileJson(doc) : null;
+  }
+
   const doc = await User.findOneAndUpdate(
     { firebaseUid: uid },
     { $addToSet: { badges: badgeName } },

@@ -39,6 +39,7 @@ donationRouter.get(
     const result = await donationService.checkDonationStatus({
       uid: req.user.uid,
       donationId,
+      email: req.user.email,
     });
 
     res.json(result);
