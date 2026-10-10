@@ -33,12 +33,32 @@ describe('donationService', () => {
 
   describe('createDonation', () => {
     it('valida valor mínimo e máximo', async () => {
+      await expect(createDonation({ uid: 'u1', amount: 4.99 })).rejects.toThrowError(
+        /O valor deve ser entre/,
+      );
+      expect(goatPayService.createPixCharge).not.toHaveBeenCalled();
       await expect(createDonation({ uid: 'u1', amount: 0.5 })).rejects.toThrowError(
         /O valor deve ser entre/,
       );
       await expect(createDonation({ uid: 'u1', amount: 6000 })).rejects.toThrowError(
         /O valor deve ser entre/,
       );
+      await expect(createDonation({ uid: 'u1', amount: NaN })).rejects.toThrowError(
+        /O valor deve ser entre/,
+      );
+    });
+
+    it('aceita R$ 5,00 (mínimo) e cria cobrança', async () => {
+      goatPayService.createPixCharge.mockResolvedValue({
+        id: 'clx_min',
+        status: 'PENDING',
+        amount: 5,
+        copyPaste: 'pix',
+        expiresAt: new Date(),
+      });
+      const res = await createDonation({ uid: 'u1', amount: 5 });
+      expect(res.amount).toBe(5);
+      expect(goatPayService.createPixCharge).toHaveBeenCalledTimes(1);
     });
 
     it('cria cobrança na GoatPay e persiste a doação', async () => {

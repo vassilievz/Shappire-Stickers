@@ -1,3 +1,5 @@
+import { reconcilePublicationStickerCounts } from './reconcilePublicationStickerCounts.js';
+export { reconcilePublicationStickerCounts } from './reconcilePublicationStickerCounts.js';
 import { Publication } from '../models/Publication.js';
 import { Follow } from '../models/Follow.js';
 import { Like } from '../models/Like.js';
@@ -16,5 +18,6 @@ export async function ensureSocialIndexes() {
   for (const model of models) {
     await model.syncIndexes();
   }
+  await reconcilePublicationStickerCounts();
   console.log('[mongo] índices sociais sincronizados');
 }

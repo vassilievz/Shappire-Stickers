@@ -98,7 +98,9 @@ export function toPublicAuthor(doc) {
 export async function loadAuthorsByUid(uids) {
   const unique = [...new Set(uids.filter(Boolean))];
   if (unique.length === 0) return new Map();
-  const users = await User.find({ firebaseUid: { $in: unique } }).lean();
+  const users = await User.find({ firebaseUid: { $in: unique } })
+    .select('firebaseUid displayName username avatar badges')
+    .lean();
   const map = new Map();
   for (const user of users) {
     map.set(user.firebaseUid, toPublicAuthor(user));

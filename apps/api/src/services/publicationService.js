@@ -21,6 +21,13 @@ import {
   getBlockedUidSet,
   loadAuthorsByUid,
 } from './socialAccessService.js';
+import {
+  countValidPublicationStickers,
+  effectiveStickerCount,
+  stickerCountForPersistence,
+} from './publicationStickerCount.js';
+
+export { effectiveStickerCount, countValidPublicationStickers } from './publicationStickerCount.js';
 
 const STICKER_MIME = new Set(['image/png', 'image/webp', 'image/gif', 'image/jpeg']);
 
@@ -49,7 +56,7 @@ export function toPublicationSummary(doc, extras = {}) {
     title: doc.title,
     description: doc.description ?? '',
     cover: doc.cover ? { ...doc.cover } : null,
-    stickerCount: doc.stickerCount ?? doc.stickers?.length ?? 0,
+    stickerCount: effectiveStickerCount(doc),
     visibility: doc.visibility,
     isAdultContent: Boolean(doc.isAdultContent),
     publishedAt: doc.publishedAt ? doc.publishedAt.toISOString() : null,
@@ -215,7 +222,7 @@ export async function uploadStickerAsset(uid, publicationId, stickerId, file, me
   else doc.stickers.push(sticker);
 
   if (!doc.cover) doc.cover = toCover(sticker);
-  doc.stickerCount = doc.stickers.length;
+  doc.stickerCount = stickerCountForPersistence(doc);
   await doc.save();
   return toPublicationDetail(doc);
 }
@@ -240,7 +247,8 @@ export async function uploadCover(uid, publicationId, file) {
 
 export async function publishPublication(uid, publicationId) {
   const doc = await assertOwner(publicationId, uid);
-  if (doc.stickers.length < PUBLICATION_MIN_STICKERS) {
+  doc.stickerCount = stickerCountForPersistence(doc);
+  if (countValidPublicationStickers(doc.stickers) < PUBLICATION_MIN_STICKERS) {
     throw new ApiError(400, 'VALIDATION_ERROR', `Publicação exige ao menos ${PUBLICATION_MIN_STICKERS} figurinhas.`);
   }
   doc.visibility = PUBLICATION_VISIBILITY.public;

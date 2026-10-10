@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Compass, Rss, Search, UserRound, UsersRound } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, UserRound, UsersRound } from 'lucide-react';
 import { Button, EmptyState, Spinner } from '@/shared/components/primitives';
 import { useTranslation } from '@/i18n';
 import { useAuthStore } from '@/state/authStore';
 import {
   fetchExplore,
-  fetchFeed,
   likePublication,
   searchSocial,
   unlikePublication,
@@ -14,42 +13,29 @@ import {
 import type { PublicationSummary, PublicAuthor } from '@shappire/contracts';
 import { friendlyMessage } from '@/shared/errors';
 import { showToast } from '@/state/toastStore';
-import { AlbumCard } from './components/AlbumCard';
 import { PublicationPostCard } from './components/PublicationPostCard';
 import { importPublicationToLibrary } from '@/services/community/importPublicationService';
 import { fetchPublication } from '@/services/api/socialApi';
 import { useLibraryStore } from '@/state/libraryStore';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { PUBLICATION_SEARCH_MAX_LENGTH } from '@shappire/contracts';
-
-type Tab = 'feed' | 'explore';
+import { useCommunityStore } from '@/state/communityStore';
 
 const SEARCH_MIN = 2;
-
-type TabCache = {
-  items: PublicationSummary[];
-  cursor: string | null;
-};
 
 function mergePublications(prev: PublicationSummary[], next: PublicationSummary[]) {
   if (!prev.length) return next;
   const seen = new Set(prev.map((p) => p.id));
-  const unique = next.filter((p) => !seen.has(p.id));
-  return [...prev, ...unique];
+  return [...prev, ...next.filter((p) => !seen.has(p.id))];
 }
 
 export function CommunityPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
-  const tab = (params.get('tab') === 'explore' ? 'explore' : 'feed') as Tab;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const refreshLibrary = useLibraryStore((s) => s.refresh);
-
-  const tabCacheRef = useRef<Record<Tab, TabCache>>({
-    feed: { items: [], cursor: null },
-    explore: { items: [], cursor: null },
-  });
+  const listVersion = useCommunityStore((s) => s.listVersion);
+  const removedIds = useCommunityStore((s) => s.removedPublicationIds);
 
   const [items, setItems] = useState<PublicationSummary[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -58,7 +44,8 @@ export function CommunityPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search.trim().slice(0, PUBLICATION_SEARCH_MAX_LENGTH), 400);
-  const [exploreSort, setExploreSort] = useState<'recent' | 'likes' | 'collections'>('recent');
+  const [sort, setSort] = useState<'recent' | 'likes' | 'collections'>('recent');
+  const loadRequestId = useRef(0);
 
   const [searchAlbums, setSearchAlbums] = useState<PublicationSummary[]>([]);
   const [searchProfiles, setSearchProfiles] = useState<PublicAuthor[]>([]);
@@ -68,47 +55,43 @@ export function CommunityPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchRequestId = useRef(0);
 
-  const isSearchMode = tab === 'explore' && debouncedSearch.length >= SEARCH_MIN;
+  const isSearchMode = debouncedSearch.length >= SEARCH_MIN;
 
-  const persistTabCache = useCallback(
-    (nextItems: PublicationSummary[], nextCursor: string | null) => {
-      tabCacheRef.current[tab] = { items: nextItems, cursor: nextCursor };
+  const filterRemoved = useCallback(
+    (list: PublicationSummary[]) => {
+      if (!removedIds.length) return list;
+      const blocked = new Set(removedIds);
+      return list.filter((p) => !blocked.has(p.id));
     },
-    [tab],
+    [removedIds],
   );
 
   const load = useCallback(
     async (reset: boolean) => {
-      if (tab === 'feed' && !isAuthenticated) {
-        setItems([]);
-        setCursor(null);
-        setLoading(false);
-        tabCacheRef.current.feed = { items: [], cursor: null };
-        return;
-      }
+      const requestId = ++loadRequestId.current;
       setError(null);
       if (reset) setLoading(true);
       else setLoadingMore(true);
       const cursorForRequest = reset ? null : cursor;
       try {
-        const page =
-          tab === 'feed'
-            ? await fetchFeed(cursorForRequest)
-            : await fetchExplore(cursorForRequest, exploreSort);
+        const page = await fetchExplore(cursorForRequest, sort);
+        if (requestId !== loadRequestId.current) return;
         setItems((prev) => {
           const merged = reset ? page.items : mergePublications(prev, page.items);
-          persistTabCache(merged, page.nextCursor);
-          return merged;
+          return filterRemoved(merged);
         });
         setCursor(page.nextCursor);
       } catch (err) {
+        if (requestId !== loadRequestId.current) return;
         setError(friendlyMessage(err));
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (requestId === loadRequestId.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
-    [tab, isAuthenticated, cursor, exploreSort, persistTabCache],
+    [cursor, sort, filterRemoved],
   );
 
   const runSearch = useCallback(
@@ -124,7 +107,7 @@ export function CommunityPage() {
         const result = await searchSocial(debouncedSearch, reset ? null : searchCursor);
         if (requestId !== searchRequestId.current) return;
         setSearchAlbums((prev) =>
-          reset ? result.publications.items : mergePublications(prev, result.publications.items),
+          filterRemoved(reset ? result.publications.items : mergePublications(prev, result.publications.items)),
         );
         setSearchProfiles((prev) => {
           const merged = reset ? result.profiles.items : [...prev, ...result.profiles.items];
@@ -146,7 +129,7 @@ export function CommunityPage() {
         }
       }
     },
-    [debouncedSearch, isSearchMode, searchCursor],
+    [debouncedSearch, isSearchMode, searchCursor, filterRemoved],
   );
 
   useEffect(() => {
@@ -163,36 +146,22 @@ export function CommunityPage() {
   }, [debouncedSearch, isSearchMode]);
 
   useEffect(() => {
-    tabCacheRef.current.explore = { items: [], cursor: null };
-  }, [exploreSort]);
-
-  useEffect(() => {
     if (isSearchMode) return;
-
-    if (tab === 'feed' && !isAuthenticated) {
-      setItems([]);
-      setCursor(null);
-      setLoading(false);
-      return;
-    }
-
-    const cached = tabCacheRef.current[tab];
-    if (cached.items.length > 0) {
-      setItems(cached.items);
-      setCursor(cached.cursor);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
     setCursor(null);
     setItems([]);
     void load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, isAuthenticated, exploreSort, isSearchMode]);
+  }, [sort, isSearchMode, listVersion]);
 
-  const setTab = (next: Tab) => {
-    setParams(next === 'explore' ? { tab: 'explore' } : {});
+  useEffect(() => {
+    setItems((prev) => filterRemoved(prev));
+    setSearchAlbums((prev) => filterRemoved(prev));
+  }, [filterRemoved]);
+
+  const patchAlbum = (album: PublicationSummary, patch: Partial<PublicationSummary>) => {
+    const apply = (item: PublicationSummary) => (item.id === album.id ? { ...item, ...patch } : item);
+    setItems((prev) => prev.map(apply));
+    setSearchAlbums((prev) => prev.map(apply));
   };
 
   const toggleLike = async (album: PublicationSummary) => {
@@ -204,30 +173,12 @@ export function CommunityPage() {
       likedByMe: !album.likedByMe,
       likeCount: Math.max(0, album.likeCount + (album.likedByMe ? -1 : 1)),
     };
-    const patchItem = (item: PublicationSummary) =>
-      item.id === album.id ? { ...item, ...optimistic } : item;
-    setItems((prev) => {
-      const next = prev.map(patchItem);
-      persistTabCache(next, cursor);
-      return next;
-    });
-    setSearchAlbums((prev) => prev.map(patchItem));
+    patchAlbum(album, optimistic);
     try {
       const res = album.likedByMe ? await unlikePublication(album.id) : await likePublication(album.id);
-      const patch = { likedByMe: res.liked, likeCount: res.likeCount };
-      setItems((prev) => {
-        const next = prev.map((item) => (item.id === album.id ? { ...item, ...patch } : item));
-        persistTabCache(next, cursor);
-        return next;
-      });
-      setSearchAlbums((prev) => prev.map((item) => (item.id === album.id ? { ...item, ...patch } : item)));
+      patchAlbum(album, { likedByMe: res.liked, likeCount: res.likeCount });
     } catch (err) {
-      setItems((prev) => {
-        const next = prev.map((item) => (item.id === album.id ? album : item));
-        persistTabCache(next, cursor);
-        return next;
-      });
-      setSearchAlbums((prev) => prev.map((item) => (item.id === album.id ? album : item)));
+      patchAlbum(album, { likedByMe: album.likedByMe, likeCount: album.likeCount });
       showToast(friendlyMessage(err), 'error');
     }
   };
@@ -239,6 +190,10 @@ export function CommunityPage() {
     }
     try {
       const detail = await fetchPublication(album.id);
+      if (!detail.stickers?.length) {
+        showToast(t('community.importUnavailable'), 'error');
+        return;
+      }
       const result = await importPublicationToLibrary(detail);
       await refreshLibrary();
       showToast(t('community.importSuccess'), 'success');
@@ -249,18 +204,14 @@ export function CommunityPage() {
   };
 
   const onBlockedUser = (uid: string) => {
-    setItems((prev) => {
-      const next = prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid);
-      persistTabCache(next, cursor);
-      return next;
-    });
+    setItems((prev) => prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid));
     setSearchAlbums((prev) => prev.filter((a) => a.author?.uid !== uid && a.ownerUid !== uid));
     setSearchProfiles((prev) => prev.filter((p) => p.uid !== uid));
   };
 
-  const renderFeedTimeline = (albums: PublicationSummary[]) => (
-    <div role="feed" aria-label={t('community.feed')} className="flex flex-col">
-      {albums.map((album, index) => (
+  const timeline = (
+    <div role="feed" aria-label={t('community.title')} className="flex flex-col">
+      {items.map((album, index) => (
         <PublicationPostCard
           key={album.id}
           album={album}
@@ -274,100 +225,45 @@ export function CommunityPage() {
     </div>
   );
 
-  const renderExploreGrid = (albums: PublicationSummary[]) => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {albums.map((album) => (
-        <PublicationPostCard
-          key={album.id}
-          album={album}
-          layout="compact"
-          onLike={() => void toggleLike(album)}
-          onCollect={() => void collect(album)}
-          onBlocked={onBlockedUser}
-        />
-      ))}
-    </div>
-  );
-
-  const renderSearchGrid = (albums: PublicationSummary[]) => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {albums.map((album) => (
-        <AlbumCard
-          key={album.id}
-          album={album}
-          compact
-          onLike={() => void toggleLike(album)}
-          onCollect={() => void collect(album)}
-          onBlocked={onBlockedUser}
-        />
-      ))}
-    </div>
-  );
-
   return (
     <div className="flex flex-col gap-5 pb-4">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold text-ink">{t('community.title')}</h1>
-        <p className="text-[13px] text-ink-muted">{t('community.subtitle')}</p>
+        <p className="text-[13px] text-ink-muted">{t('community.unifiedSubtitle')}</p>
       </header>
 
-      <div className="flex gap-2 rounded-full border border-line bg-surface p-1">
-        <button
-          type="button"
-          onClick={() => setTab('feed')}
-          className={`flex flex-1 min-h-[44px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
-            tab === 'feed' ? 'bg-surface-3 text-ink' : 'text-ink-muted'
-          }`}
-        >
-          <Rss className="size-4" aria-hidden />
-          {t('community.feed')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('explore')}
-          className={`flex flex-1 min-h-[44px] items-center justify-center gap-1.5 rounded-full text-[13px] font-medium ${
-            tab === 'explore' ? 'bg-surface-3 text-ink' : 'text-ink-muted'
-          }`}
-        >
-          <Compass className="size-4" aria-hidden />
-          {t('community.explore')}
-        </button>
-      </div>
-
-      {tab === 'explore' ? (
-        <div className="flex flex-col gap-2">
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted"
-              aria-hidden
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('community.searchPlaceholder')}
-              maxLength={PUBLICATION_SEARCH_MAX_LENGTH}
-              aria-busy={searchLoading}
-              className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 pl-9 pr-3 text-[14px] text-ink"
-            />
-          </div>
-          {!isSearchMode ? (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {(['recent', 'likes', 'collections'] as const).map((sort) => (
-                <button
-                  key={sort}
-                  type="button"
-                  onClick={() => setExploreSort(sort)}
-                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] min-h-[36px] ${
-                    exploreSort === sort ? 'border-accent text-ink' : 'border-line text-ink-muted'
-                  }`}
-                >
-                  {t(`community.sort.${sort}`)}
-                </button>
-              ))}
-            </div>
-          ) : null}
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted"
+            aria-hidden
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('community.searchPlaceholder')}
+            maxLength={PUBLICATION_SEARCH_MAX_LENGTH}
+            aria-busy={searchLoading}
+            className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 pl-9 pr-3 text-[14px] text-ink"
+          />
         </div>
-      ) : null}
+        {!isSearchMode ? (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {(['recent', 'likes', 'collections'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSort(key)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] min-h-[36px] ${
+                  sort === key ? 'border-accent text-ink' : 'border-line text-ink-muted'
+                }`}
+              >
+                {t(`community.sort.${key}`)}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {isSearchMode ? (
         searchLoading ? (
@@ -429,7 +325,18 @@ export function CommunityPage() {
                 <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">
                   {t('community.searchAlbums')}
                 </h2>
-                {renderSearchGrid(searchAlbums)}
+                <div className="flex flex-col">
+                  {searchAlbums.map((album) => (
+                    <PublicationPostCard
+                      key={album.id}
+                      album={album}
+                      layout="timeline"
+                      onLike={() => void toggleLike(album)}
+                      onCollect={() => void collect(album)}
+                      onBlocked={onBlockedUser}
+                    />
+                  ))}
+                </div>
               </section>
             ) : null}
             {searchCursor ? (
@@ -463,20 +370,18 @@ export function CommunityPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<UsersRound className="size-6" aria-hidden />}
-          title={tab === 'feed' ? t('community.feedEmptyTitle') : t('community.exploreEmptyTitle')}
-          description={tab === 'feed' ? t('community.feedEmptyDesc') : t('community.exploreEmptyDesc')}
+          title={t('community.exploreEmptyTitle')}
+          description={t('community.unifiedEmptyDesc')}
           action={
-            tab === 'feed' ? (
-              <Button type="button" className="w-full" onClick={() => setTab('explore')}>
-                {t('community.goExplore')}
+            isAuthenticated ? (
+              <Button type="button" className="w-full" onClick={() => navigate('/pacotes')}>
+                {t('community.publishCta')}
               </Button>
             ) : undefined
           }
         />
-      ) : tab === 'feed' ? (
-        renderFeedTimeline(items)
       ) : (
-        renderExploreGrid(items)
+        timeline
       )}
 
       {!isSearchMode && cursor && !loading ? (

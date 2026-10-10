@@ -834,6 +834,12 @@ export const es = {
     followListEmpty: 'Nadie por aquí todavía.',
     adultUnavailable: 'El contenido +18 no está disponible en este entorno. Contacta con soporte si necesitas ayuda.',
     unknownCreator: 'Creador',
+    unifiedSubtitle: 'Álbumes públicos de todos los creadores en una sola lista.',
+    unifiedEmptyDesc: 'Publica tu primer álbum o vuelve cuando haya novedades.',
+    publishCta: 'Publicar un álbum',
+    importUnavailable: 'Este álbum no tiene stickers disponibles para importar.',
+    stickersGallery: 'Stickers del álbum',
+    stickersUnavailable: 'Los stickers de este álbum no están disponibles ahora.',
     stickerCountShort: '{count} stickers',
     publishProgress: {
       draft: 'Preparando álbum…',

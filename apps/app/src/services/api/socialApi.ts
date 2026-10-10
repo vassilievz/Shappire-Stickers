@@ -90,6 +90,10 @@ export async function unpublishPublication(id: string): Promise<PublicationDetai
   return body as PublicationDetail;
 }
 
+export async function deletePublication(id: string): Promise<void> {
+  await apiRequest(API_ROUTES.publication(id), { method: 'DELETE' });
+}
+
 export async function uploadPublicationSticker(
   publicationId: string,
   stickerId: string,

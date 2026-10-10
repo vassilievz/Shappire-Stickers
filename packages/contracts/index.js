@@ -63,7 +63,7 @@ export const PROFILE_IMAGE_MIME_TYPES = Object.freeze([
 
 export const INITIAL_SUPPORTER_BADGE = 'initial_supporter';
 export const DONATION_AMOUNTS = Object.freeze([5, 10, 20, 50, 100]);
-export const DONATION_MIN_AMOUNT = 1;
+export const DONATION_MIN_AMOUNT = 5;
 export const DONATION_MAX_AMOUNT = 5000;
 
 export const API_ROUTES = Object.freeze({

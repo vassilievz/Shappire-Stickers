@@ -840,6 +840,12 @@ export const it = {
     followListEmpty: 'Nessuno qui per ora.',
     adultUnavailable: 'I contenuti +18 non sono disponibili in questo ambiente. Contatta il supporto se serve aiuto.',
     unknownCreator: 'Creatore',
+    unifiedSubtitle: 'Album pubblici di tutti i creator in un’unica lista.',
+    unifiedEmptyDesc: 'Pubblica il tuo primo album o torna quando ci sono novità.',
+    publishCta: 'Pubblica un album',
+    importUnavailable: 'Questo album non ha sticker disponibili da importare.',
+    stickersGallery: 'Sticker dell’album',
+    stickersUnavailable: 'Gli sticker di questo album non sono disponibili al momento.',
     stickerCountShort: '{count} sticker',
     publishProgress: {
       draft: 'Preparazione album…',

@@ -17,6 +17,9 @@ export interface ImportResult {
  * Registra a coleção no backend e cria um pacote local importado com referência à publicação original.
  */
 export async function importPublicationToLibrary(detail: PublicationDetail): Promise<ImportResult> {
+  if (!detail.stickers?.length) {
+    throw new Error('IMPORT_NO_STICKERS');
+  }
   await collectPublication(detail.id);
 
   const { pack } = await createPack({

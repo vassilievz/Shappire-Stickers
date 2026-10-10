@@ -834,6 +834,12 @@ export const hi = {
     followListEmpty: 'अभी यहाँ कोई नहीं।',
     adultUnavailable: '+18 सामग्री इस वातावरण में उपलब्ध नहीं है। मदद के लिए सहायता से संपर्क करें।',
     unknownCreator: 'निर्माता',
+    unifiedSubtitle: 'सभी निर्माताओं के सार्वजनिक एल्बम एक ही सूची में।',
+    unifiedEmptyDesc: 'अपना पहला एल्बम प्रकाशित करें या नए पैक आने पर वापस आएँ।',
+    publishCta: 'एल्बम प्रकाशित करें',
+    importUnavailable: 'इस एल्बम में आयात के लिए कोई स्टिकर उपलब्ध नहीं है।',
+    stickersGallery: 'एल्बम के स्टिकर',
+    stickersUnavailable: 'इस एल्बम के स्टिकर अभी उपलब्ध नहीं हैं।',
     stickerCountShort: '{count} स्टिकर',
     publishProgress: {
       draft: 'एल्बम तैयार हो रहा है…',

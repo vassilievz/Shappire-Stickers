@@ -5,8 +5,8 @@ import type { PublicationSummary } from '@shappire/contracts';
 import { Button } from '@/shared/components/primitives';
 import { cx } from '@/shared/utils/cx';
 import { useTranslation } from '@/i18n';
-import { formatRelative } from '@/shared/utils/format';
 import { SocialOverflowMenu } from './SocialOverflowMenu';
+import { CreatorHeader } from './CreatorHeader';
 import { ReportSheet } from './ReportSheet';
 import { ConfirmDialog } from '@/shared/components/overlays';
 import { blockUser } from '@/services/api/socialApi';
@@ -41,9 +41,7 @@ function PublicationPostCardInner({
   const [blocking, setBlocking] = useState(false);
 
   const authorUid = author?.uid ?? album.ownerUid;
-  const profilePath = author?.username ? `/comunidade/criador/${author.username}` : null;
   const canModerate = isAuthenticated && authorUid && authorUid !== currentUid;
-  const publishedLabel = album.publishedAt ? formatRelative(album.publishedAt) : null;
 
   const confirmBlock = async () => {
     if (!authorUid) return;
@@ -60,58 +58,6 @@ function PublicationPostCardInner({
     }
   };
 
-  const authorIdentity = (
-    <div className="flex min-w-0 flex-1 items-center gap-2.5">
-      {profilePath ? (
-        <Link to={profilePath} className="shrink-0">
-          {author?.avatar?.url ? (
-            <img
-              src={author.avatar.url}
-              alt=""
-              className="size-10 rounded-full border border-line object-cover"
-            />
-          ) : (
-            <div className="flex size-10 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-muted">
-              <UserRound className="size-5" aria-hidden />
-            </div>
-          )}
-        </Link>
-      ) : (
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2 text-ink-muted">
-          <UserRound className="size-5" aria-hidden />
-        </div>
-      )}
-      <div className="min-w-0">
-        {profilePath ? (
-          <Link to={profilePath} className="block truncate text-[14px] font-semibold text-ink hover:underline">
-            {author?.displayName ?? t('community.unknownCreator')}
-          </Link>
-        ) : (
-          <p className="truncate text-[14px] font-semibold text-ink">
-            {author?.displayName ?? t('community.unknownCreator')}
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0 text-[12px] text-ink-muted">
-          {author?.username ? (
-            profilePath ? (
-              <Link to={profilePath} className="font-medium hover:text-ink-soft">
-                @{author.username}
-              </Link>
-            ) : (
-              <span>@{author.username}</span>
-            )
-          ) : null}
-          {publishedLabel ? (
-            <>
-              {author?.username ? <span aria-hidden>·</span> : null}
-              <time dateTime={album.publishedAt ?? undefined}>{publishedLabel}</time>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <article
       className={cx(
@@ -121,7 +67,7 @@ function PublicationPostCardInner({
       )}
     >
       <header className="flex items-start gap-2 px-0">
-        {authorIdentity}
+        <CreatorHeader author={author} ownerUid={album.ownerUid} publishedAt={album.publishedAt} />
         {canModerate ? (
           <SocialOverflowMenu
             actions={[

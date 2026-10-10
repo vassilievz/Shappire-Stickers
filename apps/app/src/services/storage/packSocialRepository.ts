@@ -30,3 +30,15 @@ export async function savePackSocial(packId: string, record: PackSocialRecord): 
   };
   await writeJson(FILE, doc);
 }
+
+export function isImportedPackSocial(record: PackSocialRecord): boolean {
+  return Boolean(record.importedAt || record.sourceAuthorName);
+}
+
+export async function removePackSocial(packId: string): Promise<void> {
+  const { data } = await readJson<PackSocialDocument>(FILE);
+  if (!data?.byPackId?.[packId]) return;
+  const { [packId]: _removed, ...rest } = data.byPackId;
+  void _removed;
+  await writeJson(FILE, { schemaVersion: SCHEMA_VERSION, byPackId: rest });
+}
