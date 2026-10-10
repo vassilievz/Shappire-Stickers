@@ -27,6 +27,7 @@ describe('configuração do aplicativo', () => {
   });
 
   it('possui o link oficial do Discord da comunidade configurado', () => {
-    expect(APP_INFO.discordCommunityUrl).toBe('https://discord.gg/DrWfKJnES5');
+    expect(APP_INFO.discordCommunityUrl).toBe('https://discord.gg/ncT9S6TZ9e');
+    expect(APP_INFO.publicDownloadUrl).toBe('https://shappire.tools/stickers');
   });
 });

@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/state/settingsStore';
 import { useAuthStore } from '@/state/authStore';
 import { notifyAppReadyIfNative } from '@/services/ota/otaService';
 import { logAnalyticsEvent } from '@/services/firebase';
+import { ShareAppPromoHost } from '@/features/promo/ShareAppPromoHost';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
@@ -52,6 +53,7 @@ export function App() {
   return (
     <HashRouter>
       <AppSplashScreen isReady={isReady} />
+      <ShareAppPromoHost appReady={isReady} />
       <ToastHost />
       <Routes>
         <Route element={<AppShell />}>
