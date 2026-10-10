@@ -11,6 +11,7 @@ import { friendlyMessage } from '@/shared/errors';
 import { showToast } from '@/state/toastStore';
 import { WHATSAPP_LIMITS } from '@/config/whatsapp';
 import { useTranslation } from '@/i18n';
+import { WhatsAppPackRequirementCallout } from '@/shared/components/WhatsAppPackRequirement';
 import { importPackFromZip } from '@/services/packs/packBackupService';
 import { hapticNotification } from '@/services/native/haptics';
 
@@ -149,6 +150,8 @@ export function PacksPage() {
           </div>
         </header>
       </BlurFade>
+
+      <WhatsAppPackRequirementCallout />
 
       {packs.length === 0 ? (
         <EmptyState

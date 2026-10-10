@@ -8,6 +8,7 @@ import { useLibraryStore } from '@/state/libraryStore';
 import { friendlyMessage } from '@/shared/errors';
 import { showToast } from '@/state/toastStore';
 import { useTranslation } from '@/i18n';
+import { WhatsAppPackRequirementCallout } from '@/shared/components/WhatsAppPackRequirement';
 
 export interface NewPackDialogProps {
   open: boolean;
@@ -73,6 +74,7 @@ export function NewPackDialog({ open, onClose, onCreated }: NewPackDialogProps) 
       }
     >
       <div className="flex flex-col gap-4">
+        <WhatsAppPackRequirementCallout variant="compact" />
         <SegmentedControl<StickerType>
           label={t('newPack.formatLabel')}
           value={stickerType}

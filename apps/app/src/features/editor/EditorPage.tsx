@@ -28,6 +28,8 @@ import { clamp } from '@/shared/utils/math';
 import { readAssetDataUrlByPath } from '@/services/storage/projectRepository';
 import type { ImageElement } from '@/domain/editor/elements';
 import { useTranslation } from '@/i18n';
+import { WHATSAPP_LIMITS } from '@/config/whatsapp';
+import { WhatsAppPackRequirementCallout } from '@/shared/components/WhatsAppPackRequirement';
 
 const CANVAS = EDITOR_CONFIG.canvasSize;
 
@@ -299,15 +301,21 @@ export function EditorPage() {
         )}
 
         {!loading && isEmpty && activeTool !== 'text' ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-            <div className="pointer-events-auto flex max-w-[280px] flex-col items-center gap-3 rounded-[18px] border border-line bg-surface/95 px-5 py-6 text-center backdrop-blur">
-              <p className="text-[13px] leading-relaxed text-ink-soft">
-                {t('editor.emptyPrompt')}
-              </p>
-              <div className="flex w-full flex-col gap-2">
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-3 pb-4 sm:items-center sm:p-6">
+            <div
+              className="pointer-events-auto flex w-full max-w-[min(100%,360px)] flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface/95 p-4 text-left shadow-sm backdrop-blur sm:p-5"
+            >
+              <div className="text-center sm:text-left">
+                <p className="text-[15px] font-semibold text-ink">{t('home.createSticker')}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">
+                  {t('editor.emptyPrompt')}
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:flex-row">
                 <Button
                   variant="primary"
                   fullWidth
+                  className="sm:flex-1"
                   onClick={() => void handleImport()}
                   icon={<ImagePlus className="size-4" aria-hidden />}
                 >
@@ -316,12 +324,17 @@ export function EditorPage() {
                 <Button
                   variant="secondary"
                   fullWidth
+                  className="sm:flex-1"
                   onClick={handleAddText}
                   icon={<Type className="size-4" aria-hidden />}
                 >
                   {t('editor.tools.text')}
                 </Button>
               </div>
+              <WhatsAppPackRequirementCallout variant="compact" />
+              <p className="text-[11.5px] leading-relaxed text-ink-muted">
+                {t('whatsapp.editorStepHint', { min: WHATSAPP_LIMITS.MIN_STICKERS_PER_PACK })}
+              </p>
             </div>
           </div>
         ) : null}

@@ -42,7 +42,8 @@ export const de = {
     brandSubtitle: 'Shappire',
     heroTitle: 'Sticker nach deinem Geschmack',
     heroDescription:
-      'Erstelle, schneide und organisiere Sticker-Pakete direkt auf deinem Handy. Offline, ohne Konto, ohne Wasserzeichen.',
+      'Erstelle Sticker im Editor, packe sie zusammen und sende sie an WhatsApp — mindestens 3 Sticker pro Paket.',
+    createStickerHint: 'Importiere ein Foto oder Text und exportiere ans Paket, wenn du fertig bist.',
     createSticker: 'Sticker erstellen',
     importImage: 'Foto importieren',
     newPack: 'Neues Paket',
@@ -160,9 +161,22 @@ export const de = {
     issuesFound: '{count} Problem(e) gefunden.',
     addedToWhatsApp: 'Paket zu WhatsApp hinzugefügt.',
   },
+  whatsapp: {
+    minPackRuleTitle: 'Mindestens {min} Sticker pro Paket',
+    minPackRuleBody:
+      'WhatsApp importiert nur Pakete mit {min} bis {max} Stickern desselben Typs (statisch oder animiert). Im Editor erstellen, ins Paket exportieren und wiederholen, bis das Minimum erreicht ist.',
+    minPackRuleInline:
+      'Für WhatsApp braucht ein Paket mindestens {min} Sticker (max. {max}).',
+    packProgressReady: '{count} von {max} · bereit für WhatsApp',
+    packProgressNeedMore: '{count} von {max} · noch {remaining} für WhatsApp',
+    packProgressAria: '{count} von {min} Mindest-Stickern im Paket',
+    editorStepHint:
+      'Nach dem Export weitere Sticker zum gleichen Paket hinzufügen, bis mindestens {min} erreicht sind.',
+  },
   newPack: {
     title: 'Neues Paket',
-    description: 'Ein Paket enthält bis zu 30 Sticker und kann zu WhatsApp exportiert werden.',
+    description:
+      'Jedes Paket braucht mindestens 3 Sticker, damit WhatsApp es importiert (bis zu 30 insgesamt).',
     formatLabel: 'Sticker-Format',
     formatStatic: 'Statisch',
     formatAnimated: 'Animiert (GIF)',

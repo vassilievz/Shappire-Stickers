@@ -42,7 +42,8 @@ export const it = {
     brandSubtitle: 'Shappire',
     heroTitle: 'Sticker a modo tuo',
     heroDescription:
-      'Crea, ritaglia e organizza pacchetti di sticker direttamente sul tuo telefono. Offline, senza account, senza filigrane.',
+      'Crea sticker nell’editor, organizzali in pacchetti e inviali a WhatsApp — minimo 3 sticker per pacchetto.',
+    createStickerHint: 'Importa una foto o un testo ed esporta in un pacchetto quando hai finito.',
     createSticker: 'Crea sticker',
     importImage: 'Importa foto',
     newPack: 'Nuovo pacchetto',
@@ -160,9 +161,22 @@ export const it = {
     issuesFound: '{count} problema/i trovati.',
     addedToWhatsApp: 'Pacchetto aggiunto a WhatsApp.',
   },
+  whatsapp: {
+    minPackRuleTitle: 'Minimo {min} sticker per pacchetto',
+    minPackRuleBody:
+      'WhatsApp importa solo pacchetti con da {min} a {max} sticker dello stesso tipo (statico o animato). Crea nell’editor, esporta nel pacchetto e ripeti fino al minimo.',
+    minPackRuleInline:
+      'Per WhatsApp servono almeno {min} sticker per pacchetto (max. {max}).',
+    packProgressReady: '{count} di {max} · pronto per WhatsApp',
+    packProgressNeedMore: '{count} di {max} · ne mancano {remaining} per WhatsApp',
+    packProgressAria: '{count} di {min} sticker minimi nel pacchetto',
+    editorStepHint:
+      'Dopo l’export, aggiungi altri sticker allo stesso pacchetto fino ad almeno {min}.',
+  },
   newPack: {
     title: 'Nuovo pacchetto',
-    description: 'Un pacchetto raggruppa fino a 30 sticker e può essere inviato a WhatsApp.',
+    description:
+      'Ogni pacchetto richiede almeno 3 sticker per l’import in WhatsApp (fino a 30 totali).',
     formatLabel: 'Formato sticker',
     formatStatic: 'Statico',
     formatAnimated: 'Animato (GIF)',

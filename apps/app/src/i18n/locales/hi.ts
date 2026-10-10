@@ -42,7 +42,8 @@ export const hi = {
     brandSubtitle: 'Shappire',
     heroTitle: 'अपनी पसंद के स्टिकर',
     heroDescription:
-      'सीधे अपने फ़ोन पर स्टिकर पैक बनाएं, काटें और व्यवस्थित करें। ऑफ़लाइन, बिना खाते के, बिना वॉटरमार्क।',
+      'एडिटर में स्टिकर बनाएं, पैक में जोड़ें और WhatsApp पर भेजें — प्रति पैक कम से कम 3 स्टिकर।',
+    createStickerHint: 'फ़ोटो या टेक्स्ट आयात करें और पूरा होने पर पैक में एक्सपोर्ट करें।',
     createSticker: 'स्टिकर बनाएं',
     importImage: 'फ़ोटो आयात करें',
     newPack: 'नया पैक',
@@ -160,9 +161,22 @@ export const hi = {
     issuesFound: '{count} समस्या(एं) मिलीं।',
     addedToWhatsApp: 'पैक WhatsApp में जोड़ा गया।',
   },
+  whatsapp: {
+    minPackRuleTitle: 'प्रति पैक कम से कम {min} स्टिकर',
+    minPackRuleBody:
+      'WhatsApp केवल {min} से {max} स्टिकर वाले पैक आयात करता है (एक ही प्रकार — स्थिर या एनिमेटेड)। एडिटर में बनाएं, पैक में एक्सपोर्ट करें और न्यूनतम पूरा होने तक दोहराएं।',
+    minPackRuleInline:
+      'WhatsApp के लिए पैक में कम से कम {min} स्टिकर चाहिए (अधिकतम {max})।',
+    packProgressReady: '{count} / {max} · WhatsApp के लिए तैयार',
+    packProgressNeedMore: '{count} / {max} · WhatsApp के लिए {remaining} और चाहिए',
+    packProgressAria: 'पैक में {min} न्यूनतम स्टिकर में से {count}',
+    editorStepHint:
+      'एक्सपोर्ट के बाद, उसी पैक में और स्टिकर जोड़ें जब तक कम से कम {min} न हो जाएं।',
+  },
   newPack: {
     title: 'नया पैक',
-    description: 'एक पैक में अधिकतम 30 स्टिकर हो सकते हैं जिन्हें व्हाट्सएप पर भेजा जा सकता है।',
+    description:
+      'WhatsApp आयात के लिए प्रत्येक पैक में कम से कम 3 स्टिकर चाहिए (कुल अधिकतम 30)।',
     formatLabel: 'स्टिकर प्रारूप',
     formatStatic: 'स्थैतिक',
     formatAnimated: 'एनिमेटेड (GIF)',

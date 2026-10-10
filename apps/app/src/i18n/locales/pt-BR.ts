@@ -42,7 +42,8 @@ export const ptBR = {
     brandSubtitle: 'Shappire',
     heroTitle: 'Figurinhas do seu jeito',
     heroDescription:
-      'Crie, recorte e organize pacotes de figurinhas direto no celular. Sem nuvem, sem login e sem marcas d’água.',
+      'Crie figurinhas no editor, organize em pacotes e envie ao WhatsApp — no mínimo 3 figurinhas por pacote.',
+    createStickerHint: 'Importe uma foto ou texto e exporte para um pacote quando terminar.',
     createSticker: 'Criar figurinha',
     importImage: 'Importar foto',
     newPack: 'Novo pacote',
@@ -160,9 +161,22 @@ export const ptBR = {
     issuesFound: '{count} pendência(s) encontrada(s).',
     addedToWhatsApp: 'Pacote adicionado ao WhatsApp.',
   },
+  whatsapp: {
+    minPackRuleTitle: 'Mínimo de {min} figurinhas por pacote',
+    minPackRuleBody:
+      'O WhatsApp só importa pacotes com entre {min} e {max} figurinhas no mesmo formato (estático ou animado). Crie no editor, exporte para o pacote e repita até atingir o mínimo.',
+    minPackRuleInline:
+      'Para adicionar ao WhatsApp, o pacote precisa de no mínimo {min} figurinhas (máx. {max}).',
+    packProgressReady: '{count} de {max} · pronto para o WhatsApp',
+    packProgressNeedMore: '{count} de {max} · faltam {remaining} para o WhatsApp',
+    packProgressAria: '{count} de {min} figurinhas mínimas no pacote',
+    editorStepHint:
+      'Depois de exportar, adicione mais figurinhas ao mesmo pacote até completar pelo menos {min}.',
+  },
   newPack: {
     title: 'Novo pacote',
-    description: 'Um pacote reúne até 30 figurinhas e pode ser enviado para o WhatsApp.',
+    description:
+      'Cada pacote precisa de no mínimo 3 figurinhas para o WhatsApp importar (até 30 no total).',
     formatLabel: 'Formato das figurinhas',
     formatStatic: 'Estático',
     formatAnimated: 'Animado (GIF)',
@@ -376,7 +390,7 @@ export const ptBR = {
       nameRequired: 'Informe um nome para o projeto.',
       saved: 'Projeto salvo.',
     },
-    emptyPrompt: 'Comece importando uma foto da sua galeria ou escrevendo um texto.',
+    emptyPrompt: 'Importe uma foto ou adicione texto para criar sua figurinha.',
   },
   profile: {
     title: 'Perfil',

@@ -13,14 +13,18 @@ import {
   PenLine,
   Plus,
   RotateCcw,
-  Sparkles,
+  PenSquare,
   Trash2,
 } from 'lucide-react';
 import { NewPackDialog } from '@/features/packs/NewPackDialog';
-import { Badge, Button, EmptyState, IconButton, SectionTitle } from '@/shared/components/primitives';
+import { Badge, Button, EmptyState, IconButton } from '@/shared/components/primitives';
 import { BottomSheet, ConfirmDialog } from '@/shared/components/overlays';
-import { AnimatedShinyText, BlurFade, ShimmerButton } from '@/shared/components/motion';
+import {
+  PackWhatsAppProgressBar,
+  WhatsAppPackRequirementCallout,
+} from '@/shared/components/WhatsAppPackRequirement';
 import { APP_INFO, APP_LIMITS } from '@/config/app';
+import { WHATSAPP_LIMITS } from '@/config/whatsapp';
 import { formatRelative } from '@/shared/utils/format';
 import { useEditorStore } from '@/features/editor/store/editorStore';
 import type { ProjectSummary } from '@/services/storage/projectRepository';
@@ -105,76 +109,85 @@ export function HomePage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 pb-4">
+    <div className="flex flex-col gap-6 pb-12">
       <NewPackDialog
         open={packDialogOpen}
         onClose={() => setPackDialogOpen(false)}
         onCreated={(pack) => void navigate(`/pacotes/${pack.id}`)}
       />
 
-      <BlurFade delayMs={0} durationMs={320}>
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-ink-muted">
-              <AnimatedShinyText>Shappire Stickers OTA</AnimatedShinyText>
-            </p>
-            <h1 className="mt-1 text-[26px] font-semibold leading-tight tracking-[-0.02em] text-ink">
-              {t('home.heroTitle')}
-            </h1>
-            <p className="mt-1.5 max-w-[36ch] text-[14px] leading-relaxed text-ink-muted">
-              {t('home.heroDescription')}
-            </p>
-          </div>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex flex-col gap-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+            {t('home.brandSubtitle')}
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[26px]">
+            {t('home.heroTitle')}
+          </h1>
+          <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+            {t('home.heroDescription')}
+          </p>
+        </div>
+        <span className="shrink-0 self-start">
           <Badge tone="neutral">v{APP_INFO.version}</Badge>
-        </header>
-      </BlurFade>
+        </span>
+      </header>
 
-      <BlurFade delayMs={80} durationMs={320}>
-        <section className="flex flex-col gap-3">
-          <ShimmerButton
+      <WhatsAppPackRequirementCallout />
+
+      <section className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5">
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={startNewSticker}
+          icon={<PenSquare className="size-4" aria-hidden />}
+        >
+          {t('home.createSticker')}
+        </Button>
+        <p className="text-center text-[12px] leading-relaxed text-ink-muted px-1">
+          {t('home.createStickerHint')}
+        </p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button
+            variant="secondary"
             fullWidth
-            onClick={startNewSticker}
-            icon={<Sparkles className="size-5" aria-hidden />}
+            onClick={() => setPackDialogOpen(true)}
+            icon={<FolderPlus className="size-4" aria-hidden />}
           >
-            {t('home.createSticker')}
-          </ShimmerButton>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setPackDialogOpen(true)}
-              icon={<FolderPlus className="size-4" aria-hidden />}
-            >
-              {t('home.newPack')}
-            </Button>
-            <Button
-              variant="quiet"
-              onClick={() => void navigate('/pacotes')}
-              icon={<Package className="size-4" aria-hidden />}
-            >
-              {t('home.myPacks')}
-            </Button>
-          </div>
-        </section>
-      </BlurFade>
+            {t('home.newPack')}
+          </Button>
+          <Button
+            variant="quiet"
+            fullWidth
+            onClick={() => void navigate('/pacotes')}
+            icon={<Package className="size-4" aria-hidden />}
+          >
+            {t('home.myPacks')}
+          </Button>
+        </div>
+      </section>
 
-      <BlurFade delayMs={140} durationMs={320}>
-        <section className="flex flex-col gap-3">
-          <SectionTitle
-            title={t('home.recentProjects')}
-            description={projects.length > 0 ? t('home.recentProjectsDesc') : undefined}
-            action={
-              hiddenProjects.length > 0 ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setArchivedOpen(true)}
-                  icon={<Archive className="size-4" aria-hidden />}
-                >
-                  {t('home.archivedCount', { count: hiddenProjects.length })}
-                </Button>
-              ) : undefined
-            }
-          />
+      <section className="flex flex-col gap-3">
+        <div className="flex items-end justify-between gap-2 px-0.5">
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-semibold text-ink">{t('home.recentProjects')}</h2>
+            {projects.length > 0 ? (
+              <p className="mt-0.5 text-[12px] text-ink-muted">{t('home.recentProjectsDesc')}</p>
+            ) : null}
+          </div>
+          {hiddenProjects.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={() => setArchivedOpen(true)}
+              icon={<Archive className="size-4" aria-hidden />}
+            >
+              {t('home.archivedCount', { count: hiddenProjects.length })}
+            </Button>
+          ) : null}
+        </div>
           {recentProjects.length === 0 ? (
             <EmptyState
               icon={<PenLine className="size-6" aria-hidden />}
@@ -239,21 +252,17 @@ export function HomePage() {
               ))}
             </ul>
           )}
-        </section>
-      </BlurFade>
+      </section>
 
-      <BlurFade delayMs={200} durationMs={320}>
-        <section className="flex flex-col gap-3">
-          <SectionTitle
-            title={t('home.packsSection')}
-            action={
-              packs.length > 0 ? (
-                <Button variant="ghost" size="sm" onClick={() => void navigate('/pacotes')}>
-                  {t('home.viewAll')}
-                </Button>
-              ) : undefined
-            }
-          />
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <h2 className="text-[15px] font-semibold text-ink">{t('home.packsSection')}</h2>
+          {packs.length > 0 ? (
+            <Button variant="ghost" size="sm" onClick={() => void navigate('/pacotes')}>
+              {t('home.viewAll')}
+            </Button>
+          ) : null}
+        </div>
           {packs.length === 0 ? (
             <div className="rounded-[16px] border border-dashed border-line px-4 py-5 text-center">
               <p className="text-[13px] leading-relaxed text-ink-muted">
@@ -270,74 +279,72 @@ export function HomePage() {
               </Button>
             </div>
           ) : (
-            <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar sm:-mx-6 sm:px-6">
-              {packs.slice(0, 8).map((pack) => (
-                <li key={pack.id} className="shrink-0 transition-transform duration-150 active:scale-[0.96]">
-                  <button
-                    type="button"
-                    onClick={() => void navigate(`/pacotes/${pack.id}`)}
-                    className="w-[132px] rounded-[16px] border border-line bg-surface p-2.5 text-left transition-colors hover:bg-surface-2"
+            <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+              {packs.slice(0, 6).map((pack) => {
+                const count = pack.stickers.length;
+                const ready = count >= WHATSAPP_LIMITS.MIN_STICKERS_PER_PACK;
+                return (
+                  <li
+                    key={pack.id}
+                    className="w-[min(100%,168px)] shrink-0 snap-start sm:w-auto sm:shrink"
                   >
-                    <span className="checkerboard block aspect-square w-full overflow-hidden rounded-[10px] border border-line transition-colors group-hover:border-focus/40">
-                      {packPreviews[pack.id] ? (
-                        <img
-                          src={packPreviews[pack.id]}
-                          alt=""
-                          className="size-full object-contain"
-                          loading="lazy"
-                        />
-                      ) : null}
-                    </span>
-                    <span className="mt-2 block truncate text-[13px] font-medium text-ink">
-                      {pack.name}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-ink-muted">
-                      {t('home.stickersCount', { count: pack.stickers.length })}
-                    </span>
-                  </button>
-                </li>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => void navigate(`/pacotes/${pack.id}`)}
+                      className="flex h-full w-full min-h-[44px] flex-col rounded-[var(--radius-card)] border border-line bg-surface p-3 text-left transition-colors hover:border-focus/30 hover:bg-surface-2 active:bg-surface-3 touch-manipulation"
+                    >
+                      <span className="checkerboard block aspect-square w-full overflow-hidden rounded-[12px] border border-line">
+                        {packPreviews[pack.id] ? (
+                          <img
+                            src={packPreviews[pack.id]}
+                            alt=""
+                            className="size-full object-contain"
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </span>
+                      <span className="mt-2 flex items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
+                          {pack.name}
+                        </span>
+                        <Badge tone={ready ? 'success' : 'warning'}>
+                          {ready
+                            ? t('packs.ready')
+                            : `${count}/${WHATSAPP_LIMITS.MIN_STICKERS_PER_PACK}`}
+                        </Badge>
+                      </span>
+                      <PackWhatsAppProgressBar count={count} className="mt-2" />
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
-        </section>
-      </BlurFade>
+      </section>
 
-      <BlurFade delayMs={240} durationMs={320}>
-        <section className="flex flex-col gap-3">
-          <SectionTitle title={t('home.communityTitle')} />
-          <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-4.5 sm:p-5 shadow-xs transition-colors hover:border-line-focus">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3.5">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-[#5865F2]/15 text-[#5865F2] border border-[#5865F2]/25">
-                  <MessageSquare className="size-5" aria-hidden />
-                </span>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
-                      Discord Shappire
-                    </span>
-                    <Badge tone="focus">Oficial</Badge>
-                  </div>
-                  <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">
-                    {t('home.communityDesc')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => window.open(APP_INFO.discordCommunityUrl, '_blank', 'noopener,noreferrer')}
-                icon={<ExternalLink className="size-3.5" aria-hidden />}
-              >
-                {t('home.communityButton')}
-              </Button>
+      <section className="flex flex-col gap-3">
+        <h2 className="px-0.5 text-[15px] font-semibold text-ink">{t('home.communityTitle')}</h2>
+        <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent">
+              <MessageSquare className="size-4" strokeWidth={2.2} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">Discord Shappire</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{t('home.communityDesc')}</p>
             </div>
           </div>
-        </section>
-      </BlurFade>
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => window.open(APP_INFO.discordCommunityUrl, '_blank', 'noopener,noreferrer')}
+            icon={<ExternalLink className="size-4" aria-hidden />}
+          >
+            {t('home.communityButton')}
+          </Button>
+        </div>
+      </section>
 
       {}
       <BottomSheet

@@ -42,7 +42,8 @@ export const en = {
     brandSubtitle: 'Shappire',
     heroTitle: 'Stickers your way',
     heroDescription:
-      'Create, crop and organize sticker packs directly on your phone. Offline, no accounts, no watermarks.',
+      'Create stickers in the editor, bundle them into packs, and send to WhatsApp — at least 3 stickers per pack.',
+    createStickerHint: 'Import a photo or add text, then export to a pack when you are done.',
     createSticker: 'Create sticker',
     importImage: 'Import image',
     newPack: 'New pack',
@@ -160,9 +161,22 @@ export const en = {
     issuesFound: '{count} issue(s) found.',
     addedToWhatsApp: 'Pack added to WhatsApp.',
   },
+  whatsapp: {
+    minPackRuleTitle: 'At least {min} stickers per pack',
+    minPackRuleBody:
+      'WhatsApp only imports packs with {min} to {max} stickers of the same type (static or animated). Create in the editor, export to a pack, and repeat until you reach the minimum.',
+    minPackRuleInline:
+      'To add to WhatsApp, a pack needs at least {min} stickers (max. {max}).',
+    packProgressReady: '{count} of {max} · ready for WhatsApp',
+    packProgressNeedMore: '{count} of {max} · {remaining} more needed for WhatsApp',
+    packProgressAria: '{count} of {min} minimum stickers in pack',
+    editorStepHint:
+      'After exporting, add more stickers to the same pack until you have at least {min}.',
+  },
   newPack: {
     title: 'New pack',
-    description: 'A pack bundles up to 30 stickers and can be sent to WhatsApp.',
+    description:
+      'Each pack needs at least 3 stickers for WhatsApp to import it (up to 30 total).',
     formatLabel: 'Sticker format',
     formatStatic: 'Static',
     formatAnimated: 'Animated (GIF)',
@@ -376,7 +390,7 @@ export const en = {
       nameRequired: 'Enter a name for the project.',
       saved: 'Project saved.',
     },
-    emptyPrompt: 'Start by importing an image from your gallery or typing some text.',
+    emptyPrompt: 'Import an image or add text to create your sticker.',
   },
   profile: {
     title: 'Profile',
