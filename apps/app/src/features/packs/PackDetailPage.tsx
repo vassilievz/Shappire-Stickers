@@ -1,31 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Check,
-  Download,
-  ImagePlus,
-  Images,
-  Info,
-  MessageCircle,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Share2,
-  Sparkles,
-} from 'lucide-react';
-import { Badge, Button, EmptyState, SectionTitle } from '@/shared/components/primitives';
-import { BottomSheet, ConfirmDialog, Modal } from '@/shared/components/overlays';
-import { TextInput } from '@/shared/components/inputs';
+import { ArrowLeft, Info } from 'lucide-react';
+import { Button, EmptyState } from '@/shared/components/primitives';
 import { WHATSAPP_LIMITS } from '@/config/whatsapp';
-import { STICKER_AUTHOR, type StickerRecord } from '@/domain/stickerPack';
-import {
-  DEFAULT_AUTHOR_DISPLAY_NAME,
-  INSTAGRAM_LABEL,
-  INSTAGRAM_HANDLE,
-  INSTAGRAM_PROFILE_URL,
-} from '@/config/attribution';
-import { openExternalLink } from '@/services/native/externalLinks';
+import type { StickerRecord } from '@/domain/stickerPack';
 import {
   validateMetadataText,
   validateStickerPack,
@@ -41,26 +19,30 @@ import {
 } from '@/services/packs/packService';
 import {
   addPackToWhatsApp,
-  getPackAddedState,
-  getWhatsAppCapabilities,
   openWhatsAppStorePage,
   validatePackForWhatsApp,
-  type WhatsAppCapabilities,
 } from '@/services/whatsapp/whatsappService';
+import { usePackWhatsAppState } from '@/features/packs/hooks/usePackWhatsAppState';
 import { pickImagesFromGallery, pickSingleImage } from '@/services/native/imagePicker';
 import { shareStickerFile } from '@/services/native/shareService';
 import { packStickerPath } from '@/services/storage/paths';
 import { downloadPackZip } from '@/services/packs/packBackupService';
 import { hapticNotification } from '@/services/native/haptics';
 import { friendlyMessage } from '@/shared/errors';
-import { formatBytes, formatRelative } from '@/shared/utils/format';
 import { useLibraryStore } from '@/state/libraryStore';
 import { showToast } from '@/state/toastStore';
 import { useEditorStore } from '@/features/editor/store/editorStore';
 import { useSettingsStore } from '@/state/settingsStore';
-import { cx } from '@/shared/utils/cx';
-import { StickerPreview } from './StickerPreview';
-import { BlurFade } from '@/shared/components/motion';
+import { PackDetailAddSheet, PackDetailStickerSheet } from './components/PackDetailSheets';
+import {
+  PackDetailMetaDialog,
+  PackDetailRemoveConfirm,
+  PackDetailRenameDialog,
+} from './components/PackDetailDialogs';
+import { PackDetailHeader } from './components/PackDetailHeader';
+import { PackDetailStatsCard } from './components/PackDetailStatsCard';
+import { PackDetailWhatsAppSection } from './components/PackDetailWhatsAppSection';
+import { PackDetailStickerGrid } from './components/PackDetailStickerGrid';
 
 type SheetAction = 'none' | 'sticker' | 'add';
 
@@ -74,8 +56,7 @@ export function PackDetailPage() {
 
   const [sheet, setSheet] = useState<SheetAction>('none');
   const [activeSticker, setActiveSticker] = useState<StickerRecord | null>(null);
-  const [capabilities, setCapabilities] = useState<WhatsAppCapabilities | null>(null);
-  const [addedState, setAddedState] = useState<{ consumer: boolean | null; business: boolean | null } | null>(null);
+  const { capabilities, addedState, reloadWhatsAppState } = usePackWhatsAppState(packId);
   const [nativeValidation, setNativeValidation] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -88,20 +69,9 @@ export function PackDetailPage() {
     [pack],
   );
 
-  const reloadWhatsAppState = useCallback(async () => {
-    const caps = await getWhatsAppCapabilities();
-    setCapabilities(caps);
-    if (caps.nativeAvailable) {
-      setAddedState(await getPackAddedState(packId));
-    }
-  }, [packId]);
-
   useEffect(() => {
     void refresh();
-    void (async () => {
-      await reloadWhatsAppState();
-    })();
-  }, [refresh, reloadWhatsAppState]);
+  }, [refresh]);
 
   if (!pack) {
     return (
@@ -355,437 +325,91 @@ export function PackDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-6 animate-fade-in">
-      <Modal
+      <PackDetailRenameDialog
         open={renaming}
-        title={t('packDetail.editPackTitle')}
-        description={t('packDetail.editPackDesc')}
+        busy={busy}
+        name={renameValue.name}
+        onNameChange={(name) => setRenameValue({ name })}
         onClose={() => setRenaming(false)}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRenaming(false)} disabled={busy}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="primary" onClick={() => void handleRename()} loading={busy}>
-              {t('common.save')}
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <TextInput
-            label={t('packDetail.packNameLabel')}
-            name="rename-name"
-            value={renameValue.name}
-            maxLength={128}
-            onChange={(event) =>
-              setRenameValue((current) => ({ ...current, name: event.target.value }))
-            }
-          />
-        </div>
-      </Modal>
+        onSave={() => void handleRename()}
+      />
 
-      <Modal
+      <PackDetailMetaDialog
         open={metaEditor !== null}
-        title={t('packDetail.editInfo')}
-        description={t('packDetail.emojisHint')}
+        busy={busy}
+        emojis={metaValue.emojis}
+        onEmojisChange={(emojis) => setMetaValue({ emojis })}
         onClose={() => setMetaEditor(null)}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setMetaEditor(null)} disabled={busy}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="primary" onClick={() => void handleSaveMeta()} loading={busy}>
-              {t('common.save')}
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <TextInput
-            label={t('packDetail.emojisLabel')}
-            name="sticker-emojis"
-            value={metaValue.emojis}
-            placeholder="😀 😂 ✨"
-            onChange={(event) =>
-              setMetaValue((current) => ({ ...current, emojis: event.target.value }))
-            }
-          />
-          <div className="flex flex-col gap-1 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 py-2.5">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-muted">
-              {t('packDetail.creatorCreditLabel')}
-            </span>
-            <span className="text-[13px] font-medium text-ink select-all">
-              {STICKER_AUTHOR}
-            </span>
-          </div>
-        </div>
-      </Modal>
+        onSave={() => void handleSaveMeta()}
+      />
 
-      <ConfirmDialog
+      <PackDetailRemoveConfirm
         open={pendingRemove !== null}
-        title={t('packDetail.removeConfirmTitle')}
-        message={t('packDetail.removeConfirmMessage')}
-        confirmLabel={t('common.delete')}
-        danger
-        loading={busy}
+        busy={busy}
         onConfirm={() => void handleRemoveSticker()}
         onCancel={() => setPendingRemove(null)}
       />
 
-      <BottomSheet
+      <PackDetailStickerSheet
         open={sheet === 'sticker'}
-        title={activeSticker ? t('packDetail.sheetStickerTitle') : undefined}
+        pack={pack}
+        sticker={activeSticker}
+        authorDisplayName={authorDisplayName}
         onClose={() => setSheet('none')}
-      >
-        {activeSticker ? (
-          <div className="flex flex-col gap-4 pb-2">
-            {/* Pré-visualização grande e limpa — nenhum texto sobre a imagem. */}
-            <BlurFade durationMs={260} className="flex justify-center">
-              <div
-                className={cx(
-                  'checkerboard relative w-full max-w-[240px] overflow-hidden rounded-[18px] border border-line bg-surface-2/40 shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
-                  !activeSticker.isAnimated && 'animate-blur-fade',
-                )}
-              >
-                <StickerPreview
-                  packId={pack.id}
-                  fileName={activeSticker.fileName}
-                  isAnimated={activeSticker.isAnimated}
-                  className="aspect-square size-full object-contain"
-                />
-              </div>
-            </BlurFade>
+        onUseAsTray={(sticker) => void handleUseAsTray(sticker)}
+        onEditMeta={(sticker) => openMetaEditor(sticker)}
+        onShare={(sticker) => void handleShareSticker(sticker)}
+        onMoveLeft={(sticker) => void handleMove(sticker, -1)}
+        onMoveRight={(sticker) => void handleMove(sticker, 1)}
+        onRemove={(stickerId) => {
+          setPendingRemove(stickerId);
+          setSheet('none');
+        }}
+      />
 
-            {/* Atribuição de autoria — ABAIXO da figurinha, nunca dentro da imagem. */}
-            <div className="flex flex-col items-center gap-2.5 pb-1 text-center">
-              <p className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] text-ink-soft">
-                <span className="font-medium text-ink">{authorDisplayName.trim() || DEFAULT_AUTHOR_DISPLAY_NAME}</span>
-                <span aria-hidden className="text-ink-muted">·</span>
-                <span className="text-ink-muted">{INSTAGRAM_LABEL}</span>
-                <span aria-hidden className="text-ink-muted">·</span>
-                <a
-                  href={INSTAGRAM_PROFILE_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openExternalLink(INSTAGRAM_PROFILE_URL);
-                  }}
-                  className="group inline-flex min-h-[32px] items-center rounded-[8px] px-1.5 -mx-1.5 font-medium text-ink underline-offset-4 transition-colors hover:text-focus hover:underline focus-visible:outline-2 active:scale-[0.97] touch-manipulation"
-                >
-                  {INSTAGRAM_HANDLE}
-                </a>
-              </p>
-              {activeSticker.isAnimated ? (
-                <p className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                  <Sparkles className="size-3" aria-hidden />
-                  {t('packDetail.animatedInfo')} · {' '}
-                  {activeSticker.durationMs ? `${(activeSticker.durationMs / 1000).toFixed(1)}s` : 'GIF'}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="h-px bg-line/60" aria-hidden />
-
-            <ul className="flex flex-col gap-1">
-              <SheetActionRow
-                label={t('packDetail.useAsTray')}
-                onClick={() => void handleUseAsTray(activeSticker)}
-              />
-              <SheetActionRow
-                label={t('packDetail.editInfo')}
-                onClick={() => openMetaEditor(activeSticker)}
-              />
-              <SheetActionRow
-                label={t('packDetail.shareSticker')}
-                onClick={() => void handleShareSticker(activeSticker)}
-              />
-              <SheetActionRow
-                label={t('packDetail.moveLeft')}
-                onClick={() => void handleMove(activeSticker, -1)}
-              />
-              <SheetActionRow
-                label={t('packDetail.moveRight')}
-                onClick={() => void handleMove(activeSticker, 1)}
-              />
-              <SheetActionRow
-                label={t('packDetail.removeFromPack')}
-                tone="danger"
-                onClick={() => {
-                  setPendingRemove(activeSticker.id);
-                  setSheet('none');
-                }}
-              />
-            </ul>
-          </div>
-        ) : null}
-      </BottomSheet>
-
-      <BottomSheet
+      <PackDetailAddSheet
         open={sheet === 'add'}
-        title={t('packDetail.addStickers')}
+        busy={busy}
         onClose={() => setSheet('none')}
-      >
-        <div className="flex flex-col gap-2 pb-3">
-          <Button
-            variant="primary"
-            fullWidth
-            icon={<Plus className="size-4" aria-hidden />}
-            onClick={() => {
-              useEditorStore.getState().openNewProject();
-              useEditorStore.getState().setPackId(pack.id);
-              setSheet('none');
-              void navigate(`/editor?pack=${pack.id}`);
-            }}
-          >
-            {t('packDetail.createInEditor')}
-          </Button>
-          <Button
-            variant="secondary"
-            fullWidth
-            icon={<ImagePlus className="size-4" aria-hidden />}
-            onClick={() => void handleImportImage()}
-            loading={busy}
-          >
-            {t('packDetail.importFromGallery')}
-          </Button>
-          <Button
-            variant="secondary"
-            fullWidth
-            icon={<Images className="size-4" aria-hidden />}
-            onClick={() => void handleBatchImport()}
-            loading={busy}
-          >
-            {t('packDetail.batchImport')}
-          </Button>
-        </div>
-      </BottomSheet>
+        onCreateInEditor={() => {
+          useEditorStore.getState().openNewProject();
+          useEditorStore.getState().setPackId(pack.id);
+          setSheet('none');
+          void navigate(`/editor?pack=${pack.id}`);
+        }}
+        onImportImage={() => void handleImportImage()}
+        onBatchImport={() => void handleBatchImport()}
+      />
 
-      <header className="flex items-center gap-3">
-        <button
-          type="button"
-          aria-label={t('common.back')}
-          onClick={() => void navigate('/pacotes')}
-          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
-        >
-          <ArrowLeft className="size-5" aria-hidden />
-        </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[20px] font-semibold tracking-[-0.02em] text-ink">
-            {pack.name}
-          </h1>
-          <p className="truncate text-[12px] text-ink-muted">
-            {pack.publisher} · {t('packDetail.updated', { time: formatRelative(pack.updatedAt) })}
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-label={t('packDetail.exportZip')}
-          onClick={() => void handleExportZip()}
-          title={t('packDetail.exportZip')}
-          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
-        >
-          <Download className="size-4" aria-hidden />
-        </button>
-        <button
-          type="button"
-          aria-label={t('packDetail.editPackTitle')}
-          onClick={openRename}
-          className="flex size-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 touch-manipulation"
-        >
-          <Pencil className="size-4" aria-hidden />
-        </button>
-      </header>
+      <PackDetailHeader
+        pack={pack}
+        onBack={() => void navigate('/pacotes')}
+        onExportZip={() => void handleExportZip()}
+        onRename={openRename}
+      />
 
-      <BlurFade durationMs={280} delayMs={60}>
-        <section className="flex items-center gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4">
-            <span className="checkerboard size-16 shrink-0 overflow-hidden rounded-[12px] border border-line">
-            {pack.trayImage ? (
-              <StickerPreview
-                packId={pack.id}
-                fileName={pack.trayImage.fileName}
-                className="size-full object-contain"
-              />
-            ) : null}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">{t('packDetail.stickersBadge', { count: pack.stickers.length })}</Badge>
-            {pack.stickerType === 'animated' ? <Badge tone="neutral">{t('packDetail.animatedBadge')}</Badge> : null}
-            <Badge tone="neutral">v{pack.imageDataVersion}</Badge>
-              <Badge tone={packReady ? 'success' : 'warning'}>
-                {packReady ? t('packDetail.readyToSend') : t('packDetail.pending')}
-              </Badge>
-            </div>
-            <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-              {packReady
-                ? t('packDetail.meetsRequirements')
-                : (rulesValidation?.errors[0]?.message ?? t('packDetail.pending'))}
-            </p>
-          </div>
-        </section>
-      </BlurFade>
+      <PackDetailStatsCard pack={pack} packReady={packReady} rulesValidation={rulesValidation} />
 
-      <section className="flex flex-col gap-3">
-        <SectionTitle
-          title={t('packDetail.sendToWhatsApp')}
-          description={
-            capabilities && !capabilities.nativeAvailable
-              ? t('packDetail.nativeOnly')
-              : undefined
-          }
-        />
+      <PackDetailWhatsAppSection
+        capabilities={capabilities}
+        whatsappInstalled={whatsappInstalled}
+        packReady={packReady}
+        nativeValidation={nativeValidation}
+        addedState={addedState}
+        busy={busy}
+        onValidate={() => void handleValidate()}
+        onAddToWhatsApp={() => void handleAddToWhatsApp()}
+        onOpenWhatsAppStore={() => void handleOpenWhatsAppStore()}
+      />
 
-        {nativeValidation && nativeValidation.length > 0 ? (
-          <ul className="rounded-[var(--radius-control)] border border-warning/30 bg-warning/10 px-3.5 py-3">
-            {nativeValidation.map((message) => (
-              <li key={message} className="text-[12px] leading-relaxed text-warning">
-                • {message}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {capabilities && !whatsappInstalled ? (
-          <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-3">
-            <p className="text-[13px] leading-relaxed text-ink-soft">
-              {t('packDetail.whatsAppNotInstalled')}
-            </p>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleOpenWhatsAppStore()}
-              icon={<MessageCircle className="size-4" aria-hidden />}
-            >
-              {t('packDetail.installWhatsApp')}
-            </Button>
-          </div>
-        ) : null}
-
-        {addedState && (addedState.consumer || addedState.business) ? (
-          <p className="flex items-center gap-2 text-[12px] text-success">
-            <Check className="size-3.5" aria-hidden />
-            {addedState.consumer && addedState.business
-              ? t('packDetail.alreadyAddedBoth')
-              : addedState.consumer
-                ? t('packDetail.alreadyAddedConsumer')
-                : t('packDetail.alreadyAddedBusiness')}
-          </p>
-        ) : null}
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => void handleValidate()}
-            loading={busy}
-            icon={<RefreshCw className="size-4 shrink-0" aria-hidden />}
-            className="min-w-0"
-          >
-            <span className="truncate">{t('packDetail.verify')}</span>
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => void handleAddToWhatsApp()}
-            loading={busy}
-            disabled={!packReady || (capabilities !== null && !whatsappInstalled)}
-            icon={<Share2 className="size-4 shrink-0" aria-hidden />}
-            className="min-w-0"
-          >
-            <span className="truncate">{t('packDetail.add')}</span>
-          </Button>
-        </div>
-        {!packReady ? (
-          <p className="text-[12px] leading-relaxed text-ink-muted">
-            {t('packDetail.minStickersHint', { min: WHATSAPP_LIMITS.MIN_STICKERS_PER_PACK })}
-          </p>
-        ) : null}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <SectionTitle
-          title={t('packDetail.stickersSection')}
-          description={`${pack.stickers.length} / ${WHATSAPP_LIMITS.MAX_STICKERS_PER_PACK}`}
-          action={
-            <Button variant="secondary" size="sm" onClick={() => setSheet('add')}>
-              <Plus className="size-4" aria-hidden />
-              {t('packDetail.add')}
-            </Button>
-          }
-        />
-
-        {pack.stickers.length === 0 ? (
-          <EmptyState
-            icon={<ImagePlus className="size-6" aria-hidden />}
-            title={t('packDetail.emptyTitle')}
-            description={t('packDetail.emptyDesc')}
-            action={
-              <Button variant="primary" fullWidth onClick={() => setSheet('add')}>
-                {t('packDetail.addStickers')}
-              </Button>
-            }
-          />
-        ) : (
-          <ul className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 sm:gap-3.5">
-            {pack.stickers.map((sticker, index) => (
-              <li key={sticker.id} className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSticker(sticker);
-                    setSheet('sticker');
-                  }}
-                  className="group block w-full text-left touch-manipulation transition-transform duration-150 active:scale-[0.96]"
-                >
-                  <span className="checkerboard relative block aspect-square w-full overflow-hidden rounded-[12px] border border-line transition-[border-color,transform] duration-150 group-hover:border-focus/40 group-hover:scale-[1.02]">
-                    <StickerPreview
-                      packId={pack.id}
-                      fileName={sticker.fileName}
-                      isAnimated={sticker.isAnimated}
-                      className="size-full object-contain"
-                    />
-                    {sticker.isAnimated ? (
-                      <span className="absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-bold text-white shadow-sm">
-                        GIF
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="mt-1 block text-center text-[11px] tabular-nums text-ink-muted">
-                    {index + 1} · {formatBytes(sticker.sizeBytes)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
+      <PackDetailStickerGrid
+        pack={pack}
+        onAdd={() => setSheet('add')}
+        onSelectSticker={(sticker) => {
+          setActiveSticker(sticker);
+          setSheet('sticker');
+        }}
+      />
     </div>
-  );
-}
-
-function SheetActionRow({
-  label,
-  onClick,
-  tone = 'default',
-}: {
-  label: string;
-  onClick: () => void;
-  tone?: 'default' | 'danger';
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onClick}
-        className={cx(
-          'flex min-h-[44px] w-full items-center rounded-[12px] px-3 py-3 text-left text-[14px] transition-colors touch-manipulation',
-          tone === 'danger'
-            ? 'text-danger hover:bg-danger/10 active:bg-danger/15'
-            : 'text-ink hover:bg-surface-2 active:bg-surface-3',
-        )}
-      >
-        {label}
-      </button>
-    </li>
   );
 }

@@ -26,10 +26,12 @@ interface AppUpdateState {
   otaVersion: string | null;
   otaError: string | null;
   dismissedKey: string | null;
+  deviceVersion: string | null;
 
   bootstrap: () => Promise<void>;
-  checkForUpdates: (options?: { force?: boolean }) => Promise<void>;
-  downloadOta: () => Promise<void>;
+  syncDeviceVersion: () => Promise<void>;
+  checkForUpdates: (options?: { force?: boolean }) => Promise<UpdateCheckResult | 'skipped'>;
+  downloadOta: () => Promise<boolean>;
   applyOta: () => Promise<void>;
   dismissForVersion: (key: string) => void;
 }
@@ -83,25 +85,38 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
   otaVersion: null,
   otaError: null,
   dismissedKey: null,
+  deviceVersion: null,
 
-  bootstrap: async () => {
+  syncDeviceVersion: async () => {
     const status = await getOtaStatus();
+    set({ deviceVersion: status.currentVersion });
     if (status.hasStagedUpdate && status.stagedVersion) {
       set({ otaState: 'ready', otaVersion: status.stagedVersion });
     }
+  },
+
+  bootstrap: async () => {
+    await get().syncDeviceVersion();
     await get().checkForUpdates();
   },
 
   checkForUpdates: async (options) => {
-    if (shouldSkipCheck(get().lastCheckedAt, options?.force)) return;
+    if (shouldSkipCheck(get().lastCheckedAt, options?.force)) {
+      return 'skipped';
+    }
 
     set({ lastCheckedAt: Date.now() });
 
-    if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform()) {
+      set({ otaState: 'up_to_date' });
+      return { kind: 'unsupported' };
+    }
 
     set({ otaState: get().otaState === 'ready' ? 'ready' : 'checking' });
     const otaResult = await checkOtaUpdate();
     applyOtaCheckResult(set, otaResult);
+    await get().syncDeviceVersion();
+    return otaResult;
   },
 
   downloadOta: async () => {
@@ -113,9 +128,11 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
         otaVersion: result.stagedVersion ?? get().otaVersion,
         otaError: null,
       });
-      return;
+      await get().syncDeviceVersion();
+      return true;
     }
     set({ otaState: 'error', otaError: result.error });
+    return false;
   },
 
   applyOta: async () => {

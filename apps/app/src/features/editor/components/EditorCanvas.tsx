@@ -1,28 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Konva from 'konva';
-import {
-  Circle,
-  Group,
-  Image as KonvaImage,
-  Layer,
-  Line,
-  Rect,
-  Stage,
-  Transformer,
-} from 'react-konva';
+import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
 import { EDITOR_CONFIG } from '@/config/editor';
 import { calculateCenterSnap, elementCenter } from '@/domain/editor/geometry';
-import {
-  isTransformable,
-  type DrawingStroke,
-  type EditorElement,
-  type ImageElement,
-  type TransformableElement,
-} from '@/domain/editor/elements';
-import type { RasterEntry } from '@/services/imaging/rasterCache';
+import { isTransformable, type ImageElement } from '@/domain/editor/elements';
 import { clamp, degToRad } from '@/shared/utils/math';
+import { useEditorStageSize } from '@/features/editor/hooks/useEditorStageSize';
+import { useEditorPinchZoom } from '@/features/editor/hooks/useEditorPinchZoom';
+import {
+  ActiveStrokeLayer,
+  EditorElementNode,
+  MaskHintLayer,
+} from '@/features/editor/components/EditorElementNode';
+import { hitTransformableElement, type WorldPoint } from '@/features/editor/components/editorCanvasHit';
 import { hapticSelection } from '@/services/native/haptics';
-import { getEditorRasters, useEditorStore } from '@/features/editor/store/editorStore';
+import { useEditorStore } from '@/features/editor/store/editorStore';
 import {
   beginDrawingStroke,
   beginMaskStroke,
@@ -31,33 +23,21 @@ import {
   extendDrawingStroke,
   extendMaskStroke,
   resolveMaskTargetId,
-  updateTextElement,
 } from '@/features/editor/store/editorInteractions';
 
 const CANVAS = EDITOR_CONFIG.canvasSize;
-const ERASE_HINT_COLOR = 'rgba(255, 120, 120, 0.55)';
-
-interface WorldPoint {
-  x: number;
-  y: number;
-}
 
 export interface EditorCanvasProps {
-  rasterNonce: number;
   showSafeArea?: boolean;
 }
 
-export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvasProps) {
+export function EditorCanvas({ showSafeArea = false }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const groupRef = useRef<Konva.Group | null>(null);
   const layerRef = useRef<Konva.Layer | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
   const nodeRefs = useRef(new Map<string, Konva.Node>());
-  const fitRef = useRef<{ projectId: string | null; size: number }>({ projectId: null, size: 0 });
-  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
-
-  const [size, setSize] = useState(0);
   const [activeSnapLines, setActiveSnapLines] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
   const snappedRef = useRef<{ x: boolean; y: boolean }>({ x: false, y: false });
 
@@ -67,41 +47,10 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
   const viewport = useEditorStore((state) => state.viewport);
   const activeStroke = useEditorStore((state) => state.activeStroke);
   const activeMask = useEditorStore((state) => state.activeMask);
-  const setViewport = useEditorStore((state) => state.setViewport);
-  const projectId = useEditorStore((state) => state.projectId);
+  const assetsRevision = useEditorStore((state) => state.assetsRevision);
 
-  const rasters = getEditorRasters();
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return undefined;
-
-    const measure = () => {
-      const rect = container.getBoundingClientRect();
-      setSize(Math.max(0, Math.min(rect.width, rect.height)));
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(container);
-    window.addEventListener('resize', measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (size <= 0) return;
-    if (fitRef.current.projectId === projectId && fitRef.current.size === size) return;
-    const zoom = clamp((size * 0.88) / CANVAS, EDITOR_CONFIG.minZoom, EDITOR_CONFIG.maxZoom);
-    fitRef.current = { projectId, size };
-    setViewport({
-      zoom,
-      offsetX: (size - CANVAS * zoom) / 2,
-      offsetY: (size - CANVAS * zoom) / 2,
-    });
-  }, [size, projectId, setViewport]);
+  const size = useEditorStageSize(containerRef);
+  useEditorPinchZoom(containerRef);
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const maskTargetId = useMemo(() => {
@@ -139,7 +88,7 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
       .filter((node): node is Konva.Node => node !== undefined);
     tr.nodes(nodes);
     tr.getLayer()?.batchDraw();
-  }, [selectedIds, activeTool, elements, rasterNonce]);
+  }, [selectedIds, activeTool, elements, assetsRevision]);
 
   const worldToElementLocal = useCallback((element: ImageElement, world: WorldPoint): WorldPoint => {
     const center = elementCenter(element);
@@ -185,7 +134,7 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
 
     if (activeTool === 'select') {
       const clickedEmpty = !elements.some(
-        (element) => isTransformable(element) && element.visible && hitElement(element, world),
+        (element) => isTransformable(element) && element.visible && hitTransformableElement(element, world),
       );
       if (clickedEmpty) useEditorStore.getState().clearSelection();
     }
@@ -211,55 +160,6 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
   const handlePointerUp = useCallback(() => {
     if (useEditorStore.getState().activeStroke) endDrawingStroke();
     if (useEditorStore.getState().activeMask) endMaskStroke();
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return undefined;
-
-    const onTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 2) return;
-      const distance = touchDistance(event.touches);
-      pinchRef.current = { distance, zoom: useEditorStore.getState().viewport.zoom };
-    };
-
-    const onTouchMove = (event: TouchEvent) => {
-      const pinch = pinchRef.current;
-      if (!pinch || event.touches.length !== 2) return;
-      event.preventDefault();
-      const rect = container.getBoundingClientRect();
-      const distance = touchDistance(event.touches);
-      const ratio = distance / Math.max(1, pinch.distance);
-      const current = useEditorStore.getState().viewport;
-      const zoom = clamp(
-        pinch.zoom * ratio,
-        EDITOR_CONFIG.minZoom,
-        EDITOR_CONFIG.maxZoom,
-      );
-      const mid = touchMidpoint(event.touches, rect);
-      const worldX = (mid.x - current.offsetX) / current.zoom;
-      const worldY = (mid.y - current.offsetY) / current.zoom;
-      useEditorStore.getState().setViewport({
-        zoom,
-        offsetX: mid.x - worldX * zoom,
-        offsetY: mid.y - worldY * zoom,
-      });
-    };
-
-    const onTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) pinchRef.current = null;
-    };
-
-    container.addEventListener('touchstart', onTouchStart, { passive: true });
-    container.addEventListener('touchmove', onTouchMove, { passive: false });
-    container.addEventListener('touchend', onTouchEnd);
-    container.addEventListener('touchcancel', onTouchEnd);
-    return () => {
-      container.removeEventListener('touchstart', onTouchStart);
-      container.removeEventListener('touchmove', onTouchMove);
-      container.removeEventListener('touchend', onTouchEnd);
-      container.removeEventListener('touchcancel', onTouchEnd);
-    };
   }, []);
 
   const handleWheel = useCallback(
@@ -357,11 +257,10 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
               ) : null}
 
               {elements.map((element) => (
-                <ElementNode
+                <EditorElementNode
                   key={element.id}
                   element={element}
-                  rasters={rasters}
-                  rasterNonce={rasterNonce}
+                  assetsRevision={assetsRevision}
                   selected={selectedSet.has(element.id)}
                   interactive={interactive}
                   showMaskHint={activeTool === 'mask' || activeTool === 'restore'}
@@ -457,225 +356,4 @@ export function EditorCanvas({ rasterNonce, showSafeArea = false }: EditorCanvas
       ) : null}
     </div>
   );
-}
-
-interface ElementNodeProps {
-  element: EditorElement;
-  rasters: ReturnType<typeof getEditorRasters>;
-  rasterNonce: number;
-  selected: boolean;
-  interactive: boolean;
-  showMaskHint: boolean;
-  registerNode: (id: string, node: Konva.Node | null) => void;
-  onSelect: (id: string) => void;
-  onDragMove?: (element: TransformableElement, node: Konva.Node) => void;
-  onDragEnd?: (element: TransformableElement, node: Konva.Node) => void;
-}
-
-function ElementNode({
-  element,
-  rasters,
-  rasterNonce,
-  selected,
-  interactive,
-  showMaskHint,
-  registerNode,
-  onSelect,
-  onDragMove,
-  onDragEnd,
-}: ElementNodeProps) {
-  const raster: RasterEntry | null = useMemo(() => {
-    void rasterNonce;
-    if (element.kind === 'image') return rasters.getImageRaster(element);
-    if (element.kind === 'text') return rasters.getTextRaster(element);
-    return rasters.getDrawingRaster(element);
-  }, [element, rasters, rasterNonce]);
-
-  if (!element.visible || !raster) return null;
-
-  if (element.kind === 'drawing') {
-    return (
-      <KonvaImage
-        ref={(node) => registerNode(element.id, node)}
-        id={element.id}
-        image={raster.canvas}
-        x={0}
-        y={0}
-        width={CANVAS}
-        height={CANVAS}
-        listening={false}
-      />
-    );
-  }
-
-  const center = elementCenter(element);
-  const maskActive = showMaskHint && element.kind === 'image' && selected;
-
-  return (
-    <>
-      {maskActive ? (
-        <Rect
-          x={center.x}
-          y={center.y}
-          offsetX={element.width / 2}
-          offsetY={element.height / 2}
-          width={element.width}
-          height={element.height}
-          rotation={element.rotation}
-          listening={false}
-          stroke="rgba(92,124,250,0.85)"
-          dash={[10, 6]}
-          strokeWidth={2}
-        />
-      ) : null}
-      <KonvaImage
-        ref={(node) => registerNode(element.id, node)}
-        id={element.id}
-        name="editor-element"
-        image={raster.canvas}
-        x={center.x}
-        y={center.y}
-        offsetX={element.width / 2}
-        offsetY={element.height / 2}
-        width={element.width}
-        height={element.height}
-        rotation={element.rotation}
-        opacity={element.opacity}
-        listening={interactive && !element.locked}
-        draggable={interactive && !element.locked}
-        onClick={() => onSelect(element.id)}
-        onTap={() => onSelect(element.id)}
-        onDragMove={(event) => {
-          onDragMove?.(element, event.target);
-        }}
-        onDragEnd={(event) => {
-          const node = event.target;
-          if (onDragEnd) {
-            onDragEnd(element, node);
-          } else {
-            node.scaleX(1);
-            node.scaleY(1);
-            useEditorStore.getState().updateElement(element.id, {
-              x: node.x() - element.width / 2,
-              y: node.y() - element.height / 2,
-            });
-          }
-        }}
-        onTransformEnd={(event) => {
-          const node = event.target;
-          const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
-          node.scaleX(1);
-          node.scaleY(1);
-
-          if (element.kind === 'text') {
-            const scale = (scaleX + scaleY) / 2;
-            const fontSize = clamp(element.fontSize * scale, 12, 240);
-            updateTextElement(element.id, { fontSize, rotation: node.rotation() });
-            return;
-          }
-
-          const width = Math.max(16, Math.round(element.width * scaleX));
-          const height = Math.max(16, Math.round(element.height * scaleY));
-          useEditorStore.getState().updateElement(element.id, {
-            width,
-            height,
-            rotation: node.rotation(),
-            x: node.x() - width / 2,
-            y: node.y() - height / 2,
-          });
-        }}
-      />
-    </>
-  );
-}
-
-function MaskHintLayer({
-  elements,
-  points,
-}: {
-  elements: readonly EditorElement[];
-  points: number[];
-}) {
-  const mask = useEditorStore((state) => state.activeMask);
-  const brushSize = useEditorStore((state) => state.maskBrushSize);
-  const target = mask ? elements.find((element) => element.id === mask.targetId) : undefined;
-
-  const worldPoints = useMemo(() => {
-    if (!target || target.kind !== 'image') return points;
-    const center = elementCenter(target);
-    const radians = degToRad(target.rotation);
-    const cos = Math.cos(radians);
-    const sin = Math.sin(radians);
-    const out: number[] = [];
-    for (let index = 0; index + 1 < points.length; index += 2) {
-      const localX = points[index];
-      const localY = points[index + 1];
-      if (localX === undefined || localY === undefined) break;
-      const dx = localX - target.width / 2;
-      const dy = localY - target.height / 2;
-      out.push(center.x + dx * cos - dy * sin, center.y + dx * sin + dy * cos);
-    }
-    return out;
-  }, [points, target]);
-
-  if (worldPoints.length < 2) return null;
-  return (
-    <Line
-      points={worldPoints}
-      stroke={mask?.mode === 'restore' ? 'rgba(99, 217, 138, 0.6)' : ERASE_HINT_COLOR}
-      strokeWidth={brushSize}
-      lineCap="round"
-      lineJoin="round"
-      listening={false}
-      opacity={0.7}
-    />
-  );
-}
-
-function ActiveStrokeLayer({ stroke }: { stroke: DrawingStroke }) {
-  const color = stroke.mode === 'erase' ? ERASE_HINT_COLOR : stroke.color;
-  if (stroke.points.length === 2) {
-    const x = stroke.points[0];
-    const y = stroke.points[1];
-    if (x === undefined || y === undefined) return null;
-    return <Circle x={x} y={y} radius={stroke.width / 2} fill={color} listening={false} />;
-  }
-  return (
-    <Line
-      points={stroke.points}
-      stroke={color}
-      strokeWidth={stroke.width}
-      lineCap="round"
-      lineJoin="round"
-      listening={false}
-    />
-  );
-}
-
-function hitElement(element: TransformableElement, point: WorldPoint): boolean {
-  const center = elementCenter(element);
-  const radians = degToRad(-element.rotation);
-  const dx = point.x - center.x;
-  const dy = point.y - center.y;
-  const localX = dx * Math.cos(radians) - dy * Math.sin(radians);
-  const localY = dx * Math.sin(radians) + dy * Math.cos(radians);
-  return Math.abs(localX) <= element.width / 2 && Math.abs(localY) <= element.height / 2;
-}
-
-function touchDistance(touches: TouchList): number {
-  const first = touches[0];
-  const second = touches[1];
-  if (!first || !second) return 0;
-  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
-}
-
-function touchMidpoint(touches: TouchList, rect: DOMRect): WorldPoint {
-  const first = touches[0];
-  const second = touches[1];
-  if (!first || !second) return { x: 0, y: 0 };
-  return {
-    x: (first.clientX + second.clientX) / 2 - rect.left,
-    y: (first.clientY + second.clientY) / 2 - rect.top,
-  };
 }

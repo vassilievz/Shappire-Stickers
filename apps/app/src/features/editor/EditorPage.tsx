@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Boxes, ImagePlus, Layers, Minus, Plus, ShieldCheck, Type } from 'lucide-react';
 import { EDITOR_CONFIG } from '@/config/editor';
@@ -23,6 +23,7 @@ import {
 } from './store/editorAsyncActions';
 import { clearDrawingLayer, undoLastDrawingStroke } from './store/editorInteractions';
 import { useEditorStore } from './store/editorStore';
+import { useEditorChrome } from './hooks/useEditorChrome';
 import { showToast } from '@/state/toastStore';
 import { clamp } from '@/shared/utils/math';
 import { readAssetDataUrlByPath } from '@/services/storage/projectRepository';
@@ -39,7 +40,6 @@ export function EditorPage() {
   const location = useLocation();
   const { projectId } = useParams<{ projectId?: string }>();
 
-  const [rasterNonce, setRasterNonce] = useState(0);
   const [layersOpen, setLayersOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -52,39 +52,33 @@ export function EditorPage() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [showSafeArea, setShowSafeArea] = useState(false);
 
-  const history = useEditorStore((state) => state.history);
-  const selectedIds = useEditorStore((state) => state.selectedIds);
-  const activeTool = useEditorStore((state) => state.activeTool);
-  const brushSize = useEditorStore((state) => state.brushSize);
-  const brushColor = useEditorStore((state) => state.brushColor);
-  const maskBrushSize = useEditorStore((state) => state.maskBrushSize);
-  const viewport = useEditorStore((state) => state.viewport);
-  const projectName = useEditorStore((state) => state.projectName);
-  const dirty = useEditorStore((state) => state.dirty);
-  const saveStatus = useEditorStore((state) => state.saveStatus);
-  const exporting = useEditorStore((state) => state.exporting);
-
-  const setViewport = useEditorStore((state) => state.setViewport);
-  const setTool = useEditorStore((state) => state.setTool);
-  const setBrushSize = useEditorStore((state) => state.setBrushSize);
-  const setBrushColor = useEditorStore((state) => state.setBrushColor);
-  const setMaskBrushSize = useEditorStore((state) => state.setMaskBrushSize);
-  const setProjectName = useEditorStore((state) => state.setProjectName);
-  const undo = useEditorStore((state) => state.undo);
-  const redo = useEditorStore((state) => state.redo);
-  const duplicateSelected = useEditorStore((state) => state.duplicateSelected);
-  const removeElements = useEditorStore((state) => state.removeElements);
-
-  const elements = history.present;
-  const canUndo = history.past.length > 0;
-  const canRedo = history.future.length > 0;
-  const hasDrawing = elements.some(
-    (element) => element.kind === 'drawing' && element.strokes.length > 0,
-  );
-  const selectedElement = useMemo(
-    () => elements.find((element) => element.id === selectedIds[0]) ?? null,
-    [elements, selectedIds],
-  );
+  const {
+    elements,
+    selectedIds,
+    activeTool,
+    brushSize,
+    brushColor,
+    maskBrushSize,
+    viewport,
+    projectName,
+    dirty,
+    saveStatus,
+    exporting,
+    setViewport,
+    setTool,
+    setBrushSize,
+    setBrushColor,
+    setMaskBrushSize,
+    setProjectName,
+    undo,
+    redo,
+    duplicateSelected,
+    removeElements,
+    canUndo,
+    canRedo,
+    hasDrawing,
+    selectedElement,
+  } = useEditorChrome();
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +95,6 @@ export function EditorPage() {
         if (packParam) useEditorStore.getState().setPackId(packParam);
       } finally {
         if (!cancelled) {
-          setRasterNonce((value) => value + 1);
           setLoading(false);
         }
       }
@@ -142,26 +135,22 @@ export function EditorPage() {
   }, [navigate, location.search]);
 
   const handleImport = useCallback(async () => {
-    const added = await importImagesToCanvas(4);
-    if (added > 0) setRasterNonce((value) => value + 1);
+    await importImagesToCanvas(4);
   }, []);
 
   const handleAddText = useCallback(() => {
     const store = useEditorStore.getState();
     store.addText('Nova frase');
     store.setTool('select');
-    setRasterNonce((value) => value + 1);
   }, []);
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     removeElements(selectedIds);
-    setRasterNonce((value) => value + 1);
   }, [removeElements, selectedIds]);
 
   const handleDuplicate = useCallback(() => {
     duplicateSelected();
-    setRasterNonce((value) => value + 1);
   }, [duplicateSelected]);
 
   const zoomBy = useCallback(
@@ -209,7 +198,6 @@ export function EditorPage() {
     async (cropResult: { dataUrl: string; width: number; height: number }) => {
       if (cropperTargetElementId) {
         await applyCroppedImageToElement(cropperTargetElementId, cropResult);
-        setRasterNonce((value) => value + 1);
         showToast(t('editor.cropper.cropApplied'), 'success');
       }
       setCropperOpen(false);
@@ -222,7 +210,6 @@ export function EditorPage() {
     async (dataUrl: string, name: string) => {
       try {
         await addImageFromDataUrlToCanvas(dataUrl, name);
-        setRasterNonce((value) => value + 1);
         showToast(t('editor.cropper.cropApplied'), 'success');
       } catch {
         showToast(t('errors.IMAGE_DECODE_FAILED'), 'error');
@@ -297,7 +284,7 @@ export function EditorPage() {
             {t('editor.preparing')}
           </div>
         ) : (
-          <EditorCanvas rasterNonce={rasterNonce} showSafeArea={showSafeArea} />
+          <EditorCanvas showSafeArea={showSafeArea} />
         )}
 
         {!loading && isEmpty && activeTool !== 'text' ? (

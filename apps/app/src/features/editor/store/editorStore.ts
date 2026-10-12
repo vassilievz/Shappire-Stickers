@@ -69,6 +69,8 @@ interface EditorState {
   activeMask: { targetId: string; points: number[]; mode: 'erase' | 'restore' } | null;
   viewport: EditorViewport;
   exporting: boolean;
+  /** Incrementado quando caches de raster precisam ser reavaliados no canvas. */
+  assetsRevision: number;
 }
 
 export type ElementMutation = (
@@ -107,6 +109,7 @@ interface EditorActions {
   setExporting: (exporting: boolean) => void;
   setPackId: (packId: string | null) => void;
   markSaved: () => void;
+  bumpAssetsRevision: () => void;
   
   beginTextEdit: (id: string) => void;
   
@@ -148,6 +151,9 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
   activeMask: null,
   viewport: { zoom: 1, offsetX: 0, offsetY: 0 },
   exporting: false,
+  assetsRevision: 0,
+
+  bumpAssetsRevision: () => set((state) => ({ assetsRevision: state.assetsRevision + 1 })),
 
   openNewProject: (name) => {
     const project = createProject(name ?? '');
@@ -168,7 +174,9 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       activeMask: null,
       activeTool: 'select',
       viewport: { zoom: 1, offsetX: 0, offsetY: 0 },
+      assetsRevision: 0,
     });
+    get().bumpAssetsRevision();
   },
 
   hydrateProject: (project) => {
@@ -189,7 +197,9 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       activeMask: null,
       activeTool: 'select',
       viewport: { zoom: 1, offsetX: 0, offsetY: 0 },
+      assetsRevision: 0,
     });
+    get().bumpAssetsRevision();
   },
 
   resetEditor: () => {
@@ -211,6 +221,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       activeMask: null,
       activeTool: 'select',
       exporting: false,
+      assetsRevision: 0,
     });
   },
 
@@ -218,7 +229,12 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
     set((state) => {
       const next = mutation(state.history.present);
       if (next === state.history.present) return state;
-      return { history: pushHistory(state.history, next), dirty: true, saveStatus: 'idle' };
+      return {
+        history: pushHistory(state.history, next),
+        dirty: true,
+        saveStatus: 'idle',
+        assetsRevision: state.assetsRevision + 1,
+      };
     }),
 
   transient: (mutation) =>
@@ -234,6 +250,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       return {
         history,
         dirty: true,
+        assetsRevision: state.assetsRevision + 1,
         selectedIds: state.selectedIds.filter((id) =>
           history.present.some((element) => element.id === id),
         ),
@@ -247,6 +264,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       return {
         history,
         dirty: true,
+        assetsRevision: state.assetsRevision + 1,
         selectedIds: state.selectedIds.filter((id) =>
           history.present.some((element) => element.id === id),
         ),

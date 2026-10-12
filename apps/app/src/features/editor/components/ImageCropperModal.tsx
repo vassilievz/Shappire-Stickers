@@ -20,14 +20,9 @@ import { useTranslation } from '@/i18n';
 import { removeColorFromImageData, cropCanvasWithPolygon } from '@/services/imaging/cutout';
 import { createSurface } from '@/services/imaging/canvas';
 
-export type CropAspectRatio = '1:1' | 'free' | 'circle' | '3:4' | '4:3';
-export type StudioTab = 'frame' | 'magic' | 'lasso';
+import type { CropAspectRatio, ImageCropResult, StudioTab } from './imageCropperTypes';
 
-export interface ImageCropResult {
-  dataUrl: string;
-  width: number;
-  height: number;
-}
+export type { CropAspectRatio, ImageCropResult, StudioTab } from './imageCropperTypes';
 
 export interface ImageCropperModalProps {
   open: boolean;
