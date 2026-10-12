@@ -424,6 +424,15 @@ export const hi = {
     "viewSource": "सोर्स कोड देखें",
     "whatsAppDisclaimer": "\"WhatsApp\" ट्रेडमार्क Meta Platforms, Inc. का है। यह ऐप व्हाट्सएप से संबद्ध नहीं है।"
   },
+  "updates": {
+    "otaAvailableTitle": "अपडेट उपलब्ध (v{version})",
+    "otaReadyTitle": "अपडेट तैयार (v{version})",
+    "otaAvailableDesc": "ऐप दोबारा इंस्टॉल किए बिना OTA पैकेज डाउनलोड करें।",
+    "otaError": "अपडेट जाँच या डाउनलोड नहीं हो सका।",
+    "downloadOta": "अपडेट डाउनलोड करें",
+    "downloading": "डाउनलोड हो रहा है…",
+    "applyOta": "रीस्टार्ट करें और लागू करें"
+  },
   "validation": {
     "fields": {
       "identifier": "पहचानकर्ता",

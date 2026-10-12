@@ -1,5 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+/** Deve coincidir com `src/config/ota.ts` (OtaKit console). */
+const OTAKIT_APP_ID = 'c4cf6be0-def9-480d-936e-0be638499ca3';
+/** Alinhar com `package.json` / `APP_INFO.version` — baked no APK nativo. */
+const OTAKIT_RUNTIME_VERSION = '0.3.0';
+
 /**
  * Configuração do Capacitor.
  *
@@ -32,6 +37,10 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#08090b',
       overlaysWebView: false,
+    },
+    OtaKit: {
+      appId: OTAKIT_APP_ID,
+      runtimeVersion: OTAKIT_RUNTIME_VERSION,
     },
   },
 };

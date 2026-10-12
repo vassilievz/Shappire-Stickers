@@ -424,6 +424,15 @@ export const en = {
     "viewSource": "View source code",
     "whatsAppDisclaimer": "The \"WhatsApp\" trademark belongs to Meta Platforms, Inc. This application is not affiliated with or endorsed by WhatsApp."
   },
+  "updates": {
+    "otaAvailableTitle": "Update available (v{version})",
+    "otaReadyTitle": "Update ready (v{version})",
+    "otaAvailableDesc": "Download the OTA package to get improvements without reinstalling the app.",
+    "otaError": "Could not check or download the update.",
+    "downloadOta": "Download update",
+    "downloading": "Downloading…",
+    "applyOta": "Restart and apply"
+  },
   "validation": {
     "fields": {
       "identifier": "identifier",

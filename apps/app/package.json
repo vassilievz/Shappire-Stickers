@@ -37,6 +37,7 @@
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
+    "@otakit/capacitor-updater": "^3.2.0",
     "jszip": "^3.10.2",
     "konva": "^10.7.0",
     "lucide-react": "^1.51.0",

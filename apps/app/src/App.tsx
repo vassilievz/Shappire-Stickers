@@ -10,6 +10,8 @@ import { SettingsPage } from '@/features/settings/SettingsPage';
 import { ToastHost } from '@/shared/components/overlays';
 import { useSettingsStore } from '@/state/settingsStore';
 import { ensureBodyScrollUnlocked } from '@/shared/utils/bodyScrollLock';
+import { notifyAppReadyIfNative } from '@/services/ota/otaService';
+import { useAppUpdateStore } from '@/state/appUpdateStore';
 
 export function App() {
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
@@ -20,6 +22,13 @@ export function App() {
       setIsReady(true);
     });
   }, [hydrateSettings]);
+
+  useEffect(() => {
+    if (isReady) {
+      void notifyAppReadyIfNative();
+      void useAppUpdateStore.getState().bootstrap();
+    }
+  }, [isReady]);
 
   useEffect(() => {
     const onVisibility = () => {

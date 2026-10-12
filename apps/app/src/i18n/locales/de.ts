@@ -424,6 +424,15 @@ export const de = {
     "viewSource": "Quellcode anzeigen",
     "whatsAppDisclaimer": "Die Marke \"WhatsApp\" gehört Meta Platforms, Inc. Diese App steht in keiner Verbindung zu WhatsApp."
   },
+  "updates": {
+    "otaAvailableTitle": "Update verfügbar (v{version})",
+    "otaReadyTitle": "Update bereit (v{version})",
+    "otaAvailableDesc": "OTA-Paket laden – Verbesserungen ohne Neuinstallation.",
+    "otaError": "Update konnte nicht geprüft oder heruntergeladen werden.",
+    "downloadOta": "Update herunterladen",
+    "downloading": "Wird heruntergeladen…",
+    "applyOta": "Neu starten und anwenden"
+  },
   "validation": {
     "fields": {
       "identifier": "Kennung",
