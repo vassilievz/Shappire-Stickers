@@ -16,7 +16,7 @@ import { createBrowserImageEncoder, type ImageEncoder } from './encoder';
 import { loadImageElement } from './imageLoader';
 import { renderStickerToCanvas } from './renderer';
 import type { RasterResources } from './rasterCache';
-import { logAnalyticsEvent } from '@/services/firebase/analytics';
+import { logAnalyticsEvent } from '@/services/logging/analytics';
 
 
 export const WEBP_QUALITY_STEPS = [0.95, 0.9, 0.85, 0.8, 0.72, 0.62, 0.5] as const;

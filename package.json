@@ -1,8 +1,8 @@
 {
   "name": "shappire-stickers",
   "private": true,
-  "version": "0.2.2",
-  "description": "Monorepo Shappire Stickers: app Android (apps/app), API (apps/api) e contratos compartilhados (packages/contracts)",
+  "version": "0.3.0",
+  "description": "Shappire Stickers — app Android offline-first para criar figurinhas e pacotes do WhatsApp",
   "license": "MIT",
   "author": "Gabriel (vassiliev)",
   "homepage": "https://github.com/vassilievz/Shappire-Stickers",
@@ -11,16 +11,13 @@
     "url": "https://github.com/vassilievz/Shappire-Stickers.git"
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/app"
   ],
   "scripts": {
-    "start": "node apps/api/src/server.js",
-    "api:dev": "npm run dev -w apps/api",
     "app:dev": "npm run dev -w apps/app",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck -w apps/app",
+    "test": "npm run test -w apps/app",
+    "lint": "npm run lint -w apps/app",
     "build": "npm run build -w apps/app",
     "cap:sync": "npm run cap:sync -w apps/app",
     "android:debug": "npm run android:debug -w apps/app"

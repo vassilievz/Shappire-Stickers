@@ -1,6 +1,5 @@
 import { t } from '@/i18n';
 
-
 export type AppErrorCode =
   | 'UNKNOWN'
   | 'STORAGE_READ_FAILED'
@@ -27,28 +26,10 @@ export type AppErrorCode =
   | 'WHATSAPP_NOT_INSTALLED'
   | 'WHATSAPP_ADD_FAILED'
   | 'PERMISSION_DENIED'
-  | 'AUTH_CANCELLED'
-  | 'AUTH_FAILED'
-  | 'NETWORK_ERROR'
-  | 'NATIVE_CONFIG_MISSING'
-  | 'UNSUPPORTED_FORMAT'
-  | 'OFFLINE'
-  | 'UNAUTHORIZED'
-  | 'USERNAME_TAKEN'
-  | 'RATE_LIMIT_EXCEEDED'
-  | 'UPLOAD_FAILED'
-  | 'API_NOT_CONFIGURED'
-  | 'MONTHLY_DONOR_REQUIRED'
-  | 'INVALID_DECORATION'
-  | 'INVITE_INVALID'
-  | 'INVITE_NOT_ELIGIBLE'
-  | 'INVITE_ALREADY_APPLIED'
-  | 'REWARD_NOT_AVAILABLE'
-  | 'PAYMENT_NOT_FOUND';
+  | 'UNSUPPORTED_FORMAT';
 
 export interface AppErrorOptions {
   cause?: unknown;
-  
   details?: Record<string, unknown>;
 }
 
@@ -72,7 +53,6 @@ export class AppError extends Error {
   }
 }
 
-
 export function toAppError(value: unknown, fallbackCode: AppErrorCode = 'UNKNOWN'): AppError {
   if (AppError.is(value)) {
     return value;
@@ -84,7 +64,6 @@ export function toAppError(value: unknown, fallbackCode: AppErrorCode = 'UNKNOWN
     details: { value: String(value) },
   });
 }
-
 
 const FRIENDLY_MESSAGES: Partial<Record<AppErrorCode, string>> = {
   STORAGE_READ_FAILED: 'Não foi possível ler os dados salvos no aparelho.',
@@ -106,24 +85,13 @@ const FRIENDLY_MESSAGES: Partial<Record<AppErrorCode, string>> = {
   PACK_LIMIT_REACHED: 'Limite de 10 pacotes por aplicativo atingido.',
   PACK_MIXED_TYPES:
     'O WhatsApp não permite misturar figurinhas estáticas e animadas no mesmo pacote.',
-  PACK_TYPE_MISMATCH:
-    'O tipo da figurinha não corresponde ao tipo deste pacote.',
+  PACK_TYPE_MISMATCH: 'O tipo da figurinha não corresponde ao tipo deste pacote.',
   CANCELLED: 'Operação cancelada.',
   NATIVE_UNAVAILABLE: 'Este recurso só está disponível no aplicativo Android instalado.',
   WHATSAPP_NOT_INSTALLED: 'O WhatsApp não está instalado neste aparelho.',
   WHATSAPP_ADD_FAILED: 'O WhatsApp não conseguiu adicionar este pacote.',
   PERMISSION_DENIED: 'Permissão negada pelo sistema.',
-  AUTH_CANCELLED: 'O login com o Google foi cancelado.',
-  AUTH_FAILED: 'Não foi possível concluir o login com o Google.',
-  NETWORK_ERROR: 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
-  NATIVE_CONFIG_MISSING: 'Configuração nativa do Firebase pendente no Android (google-services.json).',
   UNSUPPORTED_FORMAT: 'Formato de imagem não suportado. Use PNG, JPEG, WebP ou GIF.',
-  OFFLINE: 'Você está offline. Esta ação precisa de conexão com a internet.',
-  UNAUTHORIZED: 'Sua sessão expirou. Entre novamente para continuar.',
-  USERNAME_TAKEN: 'Este usuário já está em uso.',
-  RATE_LIMIT_EXCEEDED: 'Muitas tentativas em pouco tempo. Aguarde alguns instantes e tente novamente.',
-  UPLOAD_FAILED: 'Não foi possível enviar a imagem. Verifique a conexão e tente novamente.',
-  API_NOT_CONFIGURED: 'O endereço da API não está configurado neste ambiente.',
 };
 
 export function friendlyMessage(error: unknown): string {

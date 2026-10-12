@@ -14,9 +14,6 @@ export const STORAGE_ROOT = {
   thumbnailsDir: 'cache/thumbnails',
   
   cacheDir: 'cache',
-  
-  modelsDir: 'ai_models',
-  
   tempDir: 'tmp',
 } as const;
 

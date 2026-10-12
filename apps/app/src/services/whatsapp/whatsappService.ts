@@ -15,7 +15,7 @@ import {
   type PackAddedState,
   type StickerPackNativeStatus,
 } from './whatsappNative';
-import { logAnalyticsEvent } from '@/services/firebase/analytics';
+import { logAnalyticsEvent } from '@/services/logging/analytics';
 
 const log = createLogger('whatsapp-service');
 

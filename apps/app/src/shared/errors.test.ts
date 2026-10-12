@@ -21,7 +21,7 @@ describe('AppError', () => {
   });
 
   it('reaproveita AppError existente em toAppError', () => {
-    const error = new AppError('NETWORK_ERROR', 'sem rede');
+    const error = new AppError('STORAGE_READ_FAILED', 'falha');
     expect(toAppError(error)).toBe(error);
   });
 
@@ -38,8 +38,8 @@ describe('AppError', () => {
 });
 
 describe('friendlyMessage', () => {
-  it('localiza os códigos do fluxo de perfil em todos os idiomas', () => {
-    const codes = ['UNSUPPORTED_FORMAT', 'IMAGE_TOO_LARGE', 'UPLOAD_FAILED', 'NETWORK_ERROR'] as const;
+  it('localiza códigos principais em todos os idiomas', () => {
+    const codes = ['UNSUPPORTED_FORMAT', 'IMAGE_TOO_LARGE', 'PACK_INVALID', 'WHATSAPP_ADD_FAILED'] as const;
 
     for (const lang of languages) {
       setLanguage(lang);
@@ -48,13 +48,6 @@ describe('friendlyMessage', () => {
         expect(friendlyMessage(error)).toBe(t(`errors.${code}`, undefined, lang));
       }
     }
-  });
-
-  it('prefere a mensagem localizada à mensagem bruta do AppError', () => {
-    setLanguage('pt-BR');
-    const error = new AppError('AUTH_FAILED', 'mensagem bruta do Firebase');
-    expect(friendlyMessage(error)).toBe(t('errors.AUTH_FAILED', undefined, 'pt-BR'));
-    expect(friendlyMessage(error)).not.toBe('mensagem bruta do Firebase');
   });
 
   it('envolve erros desconhecidos com mensagem amigável', () => {

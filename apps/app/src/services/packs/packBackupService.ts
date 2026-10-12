@@ -9,7 +9,7 @@ import { createLogger } from '@/services/logging/logger';
 import { createId, createPackIdentifier } from '@/shared/utils/id';
 import { nowIso } from '@/shared/utils/format';
 import type { StickerPack, StickerRecord, TrayImageRecord } from '@/domain/stickerPack';
-import { logAnalyticsEvent } from '@/services/firebase/analytics';
+import { logAnalyticsEvent } from '@/services/logging/analytics';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[^\w.-]/g, '_');

@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Archive,
   ChevronRight,
-  ExternalLink,
   EyeOff,
   FolderOpen,
   FolderPlus,
-  MessageSquare,
   MoreVertical,
   Package,
   PenLine,
@@ -322,31 +320,6 @@ export function HomePage() {
           )}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="px-0.5 text-[15px] font-semibold text-ink">{t('home.communityTitle')}</h2>
-        <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent">
-              <MessageSquare className="size-4" strokeWidth={2.2} aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink">Discord Shappire</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{t('home.communityDesc')}</p>
-            </div>
-          </div>
-          <Button
-            variant="secondary"
-            size="md"
-            className="w-full shrink-0 sm:w-auto"
-            onClick={() => window.open(APP_INFO.discordCommunityUrl, '_blank', 'noopener,noreferrer')}
-            icon={<ExternalLink className="size-4" aria-hidden />}
-          >
-            {t('home.communityButton')}
-          </Button>
-        </div>
-      </section>
-
-      {}
       <BottomSheet
         open={menuProject !== null}
         title={menuProject?.name}

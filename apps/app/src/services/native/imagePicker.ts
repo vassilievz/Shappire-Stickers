@@ -5,7 +5,7 @@ import { EDITOR_CONFIG } from '@/config/editor';
 import { AppError, toAppError } from '@/shared/errors';
 import { createLogger } from '@/services/logging/logger';
 import { decodeImageFromDataUrl, readFileAsDataUrl } from '@/services/imaging/imageLoader';
-import { logAnalyticsEvent } from '@/services/firebase/analytics';
+import { logAnalyticsEvent } from '@/services/logging/analytics';
 
 const log = createLogger('image-picker');
 

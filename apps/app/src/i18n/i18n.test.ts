@@ -22,14 +22,11 @@ describe('i18n translations', () => {
     expect(t('nav.home', undefined, 'hi')).toBe('होम');
   });
 
-  it('translates community and profile nav links correctly in each language', () => {
-    expect(t('nav.community', undefined, 'en')).toBe('Community');
-    expect(t('nav.community', undefined, 'pt-BR')).toBe('Comunidade');
-    expect(t('nav.profile', undefined, 'en')).toBe('Profile');
-    expect(t('nav.profile', undefined, 'pt-BR')).toBe('Perfil');
-    expect(t('nav.profile', undefined, 'de')).toBe('Profil');
-    expect(t('nav.profile', undefined, 'it')).toBe('Profilo');
-    expect(t('nav.profile', undefined, 'hi')).toBe('प्रोफ़ाइल');
+  it('translates create and settings nav links correctly in each language', () => {
+    expect(t('nav.create', undefined, 'en')).toBe('Create');
+    expect(t('nav.create', undefined, 'pt-BR')).toBe('Criar');
+    expect(t('nav.settings', undefined, 'en')).toBe('Settings');
+    expect(t('nav.settings', undefined, 'pt-BR')).toBe('Ajustes');
   });
 
   it('interpolates parameters correctly', () => {

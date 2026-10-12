@@ -26,8 +26,7 @@ describe('configuração do aplicativo', () => {
     expect(APP_LIMITS.maxStoredProjects).toBeGreaterThan(APP_LIMITS.recentProjects);
   });
 
-  it('possui o link oficial do Discord da comunidade configurado', () => {
-    expect(APP_INFO.discordCommunityUrl).toBe('https://discord.gg/ncT9S6TZ9e');
-    expect(APP_INFO.publicDownloadUrl).toBe('https://shappire.tools/stickers');
+  it('descreve o app como offline-first', () => {
+    expect(APP_INFO.privacySummary).toMatch(/offline|aparelho|device/i);
   });
 });

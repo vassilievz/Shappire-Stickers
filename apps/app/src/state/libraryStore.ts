@@ -16,13 +16,6 @@ import {
 import { loadProjectSummaries, type ProjectSummary } from '@/services/storage/projectRepository';
 import { friendlyMessage } from '@/shared/errors';
 import { showToast } from './toastStore';
-import { removeSocialPublication } from '@/services/community/removeSocialPublicationService';
-import {
-  getPackSocial,
-  isImportedPackSocial,
-  removePackSocial,
-} from '@/services/storage/packSocialRepository';
-import { useAuthStore } from './authStore';
 
 const log = createLogger('library');
 
@@ -112,18 +105,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   removePack: async (packId) => {
-    const social = await getPackSocial(packId);
-    const isAuthenticated = useAuthStore.getState().isAuthenticated;
-    if (social?.publicationId && isAuthenticated && !isImportedPackSocial(social)) {
-      try {
-        await removeSocialPublication(social.publicationId);
-      } catch (err) {
-        showToast(friendlyMessage(err), 'error');
-        throw err;
-      }
-    } else if (social) {
-      await removePackSocial(packId);
-    }
     await deletePackService(packId);
     set((state) => {
       const { [packId]: _removed, ...packPreviews } = state.packPreviews;

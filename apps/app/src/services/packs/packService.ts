@@ -35,7 +35,7 @@ import {
   writeTrayFile,
   writeWhatsAppContents,
 } from '@/services/whatsapp/stickerPackExporter';
-import { logAnalyticsEvent } from '@/services/firebase/analytics';
+import { logAnalyticsEvent } from '@/services/logging/analytics';
 
 const log = createLogger('pack-service');
 

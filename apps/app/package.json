@@ -1,7 +1,7 @@
 {
   "name": "@shappire/app",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Shappire Stickers - app Android (React + Capacitor) para criar figurinhas do WhatsApp",
   "type": "module",
   "license": "MIT",
@@ -23,10 +23,9 @@
     "cap:sync": "npm run build && cap sync android",
     "cap:copy": "npm run build && cap copy android",
     "cap:open": "cap open android",
-    "android:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug --console=plain"
+    "android:debug": "npm run cap:sync && node scripts/android-assemble-debug.mjs"
   },
   "dependencies": {
-    "@capacitor-firebase/authentication": "^8.5.2",
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/camera": "^8.2.5",
@@ -38,14 +37,10 @@
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
-    "@otakit/capacitor-updater": "^3.2.0",
-    "@shappire/contracts": "*",
-    "firebase": "^12.19.0",
     "jszip": "^3.10.2",
     "konva": "^10.7.0",
     "lucide-react": "^1.51.0",
     "omggif": "^1.0.10",
-    "qrcode.react": "^4.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-konva": "^19.3.0",
