@@ -7,6 +7,7 @@ import {
   ExternalLink,
   HardDrive,
   Info,
+  Download,
   RefreshCw,
   Sticker,
   Trash2,
@@ -32,6 +33,22 @@ import { showToast } from '@/state/toastStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import type { LanguagePreference, ThemePreference } from '@/services/storage/settingsRepository';
 import { useTranslation } from '@/i18n';
+import {
+  applyOtaUpdate,
+  checkOtaUpdate,
+  downloadOtaUpdate,
+  getOtaStatus,
+  type AppUpdateStatus,
+} from '@/services/ota/otaService';
+
+type OtaCheckUiState =
+  | 'idle'
+  | 'checking'
+  | 'up_to_date'
+  | 'update_available'
+  | 'downloading'
+  | 'ready'
+  | 'error';
 
 const CREDITS: { name: string; license: string; url: string }[] = [
   { name: 'React', license: 'MIT', url: 'https://react.dev' },
@@ -105,6 +122,84 @@ export function SettingsPage() {
   const [cleaning, setCleaning] = useState(false);
   const [langSheetOpen, setLangSheetOpen] = useState(false);
   const [licensesOpen, setLicensesOpen] = useState(false);
+  const [otaStatus, setOtaStatus] = useState<AppUpdateStatus | null>(null);
+  const [otaCheckState, setOtaCheckState] = useState<OtaCheckUiState>('idle');
+  const [availableOtaVersion, setAvailableOtaVersion] = useState<string | null>(null);
+  const [otaErrorMessage, setOtaErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getOtaStatus().then((status) => {
+      setOtaStatus(status);
+      if (status.hasStagedUpdate && status.stagedVersion) {
+        setOtaCheckState('ready');
+        setAvailableOtaVersion(status.stagedVersion);
+      }
+    });
+  }, []);
+
+  const handleCheckUpdates = async () => {
+    setOtaCheckState('checking');
+    setOtaErrorMessage(null);
+    try {
+      const result = await checkOtaUpdate();
+      const status = await getOtaStatus();
+      setOtaStatus(status);
+
+      if (result.kind === 'up_to_date') {
+        setOtaCheckState('up_to_date');
+        showToast(t('settings.upToDate'), 'success');
+      } else if (result.kind === 'update_available') {
+        setOtaCheckState('update_available');
+        setAvailableOtaVersion(result.version);
+        showToast(`${t('settings.updateAvailable')}: v${result.version}`, 'info');
+      } else if (result.kind === 'already_staged') {
+        setOtaCheckState('ready');
+        setAvailableOtaVersion(result.version);
+      } else if (result.kind === 'unsupported') {
+        setOtaCheckState('up_to_date');
+        showToast(t('settings.browserEnvNotice'), 'info');
+      } else if (result.kind === 'error') {
+        setOtaCheckState('error');
+        setOtaErrorMessage(result.message);
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      setOtaCheckState('error');
+      const msg = error instanceof Error ? error.message : t('settings.updateError');
+      setOtaErrorMessage(msg);
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    setOtaCheckState('downloading');
+    setOtaErrorMessage(null);
+    try {
+      const result = await downloadOtaUpdate();
+      if (result.success) {
+        setOtaCheckState('ready');
+        if (result.stagedVersion) {
+          setAvailableOtaVersion(result.stagedVersion);
+        }
+        showToast(t('settings.updateReady'), 'success');
+      } else {
+        setOtaCheckState('error');
+        setOtaErrorMessage(result.error ?? t('settings.downloadError'));
+        showToast(result.error ?? t('settings.downloadError'), 'error');
+      }
+    } catch (error) {
+      setOtaCheckState('error');
+      const msg = error instanceof Error ? error.message : t('settings.downloadError');
+      setOtaErrorMessage(msg);
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleRestart = async () => {
+    await applyOtaUpdate();
+  };
+
+  const showOtaStatusDetail = otaCheckState !== 'idle' && otaCheckState !== 'up_to_date';
 
   const themeOptions = [
     { value: 'dark', label: t('settings.themeDark') },
@@ -380,15 +475,68 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-2">
+        <GroupLabel>{t('settings.updates')}</GroupLabel>
+        <SettingsCard>
+          <p className="border-b border-line/60 px-4 py-2.5 text-[12px] leading-relaxed text-ink-muted">
+            {t('settings.updatesDesc')}
+          </p>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[13px] text-ink-soft">{t('settings.currentVersion')}</span>
+            <Badge tone="neutral">v{otaStatus?.currentVersion ?? APP_INFO.version}</Badge>
+          </div>
+
+          {showOtaStatusDetail ? (
+            <p className="border-t border-line/60 px-4 py-2.5 text-[12px] leading-relaxed text-ink-muted">
+              {otaCheckState === 'checking' && t('settings.checkingUpdates')}
+              {otaCheckState === 'downloading' && t('settings.downloadingUpdate')}
+              {otaCheckState === 'update_available' &&
+                `${t('settings.updateAvailable')} (v${availableOtaVersion ?? '?'})`}
+              {otaCheckState === 'ready' && t('settings.updateReadyDesc')}
+              {otaCheckState === 'error' && (otaErrorMessage ?? t('settings.updateError'))}
+            </p>
+          ) : null}
+
+          <div className="border-t border-line/60 p-3">
+            {otaCheckState === 'update_available' || otaCheckState === 'downloading' ? (
+              <Button
+                variant="primary"
+                fullWidth
+                loading={otaCheckState === 'downloading'}
+                onClick={() => void handleDownloadUpdate()}
+                icon={<Download className="size-4" aria-hidden />}
+              >
+                {otaCheckState === 'downloading' ? t('settings.downloadingUpdate') : t('settings.updateNow')}
+              </Button>
+            ) : otaCheckState === 'ready' ? (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => void handleRestart()}
+                icon={<RefreshCw className="size-4" aria-hidden />}
+              >
+                {t('settings.restartNow')}
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                fullWidth
+                loading={otaCheckState === 'checking'}
+                onClick={() => void handleCheckUpdates()}
+                icon={<RefreshCw className="size-4" aria-hidden />}
+              >
+                {t('settings.checkForUpdates')}
+              </Button>
+            )}
+          </div>
+        </SettingsCard>
+      </section>
+
+      <section className="flex flex-col gap-2">
         <GroupLabel>{t('settings.about')}</GroupLabel>
         <SettingsCard>
           <p className="border-b border-line/60 px-4 py-3 text-[12px] leading-relaxed text-ink-muted">
             {t('settings.privacyDesc')}
           </p>
-          <div className="flex items-center justify-between border-b border-line/60 px-4 py-3">
-            <span className="text-[13px] text-ink-soft">{t('settings.currentVersion')}</span>
-            <Badge tone="neutral">v{APP_INFO.version}</Badge>
-          </div>
           <div className="flex items-center justify-between border-b border-line/60 px-4 py-3">
             <span className="text-[13px] text-ink-soft">{t('settings.license')}</span>
             <span className="text-[13px] font-medium text-ink">{APP_INFO.licenseName}</span>
